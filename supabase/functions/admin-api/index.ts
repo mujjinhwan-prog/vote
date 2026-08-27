@@ -77,7 +77,6 @@ Deno.serve(async (req) => {
           .from("surveys")
           .insert({
             title: c.title ?? "",
-            subtitle: c.subtitle ?? "",
             choice_question_count: c.choiceQuestionCount ?? 0,
             choices_per_question: c.choicesPerQuestion ?? 2,
             text_question_count: c.textQuestionCount ?? 0,
@@ -105,7 +104,6 @@ Deno.serve(async (req) => {
           .from("surveys")
           .update({
             title: c.title ?? "",
-            subtitle: c.subtitle ?? "",
             choice_question_count: c.choiceQuestionCount ?? 0,
             choices_per_question: c.choicesPerQuestion ?? 2,
             text_question_count: c.textQuestionCount ?? 0,

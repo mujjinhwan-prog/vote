@@ -7,7 +7,6 @@ create extension if not exists pgcrypto;
 create table if not exists surveys (
   id uuid primary key default gen_random_uuid(),
   title text not null default '',
-  subtitle text not null default '',
   choice_question_count int not null default 3,
   choices_per_question int not null default 4,
   text_question_count int not null default 1,
