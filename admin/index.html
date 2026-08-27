@@ -16,7 +16,21 @@
 .survey-row-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:190px;}
 .survey-row-actions .btn{width:100%;padding-left:8px;padding-right:8px;}
 .td-actions{white-space:normal !important;overflow:visible !important;max-width:none !important;vertical-align:top;padding-top:12px;padding-bottom:12px;}
-.daily-scroll{max-height:360px;overflow-y:auto;}
+.daily-chart-row{display:flex;gap:22px;align-items:stretch;}
+.daily-chart-col{flex:1;min-width:0;}
+.daily-side-col{flex:none;width:150px;border-left:1px solid var(--border);padding-left:18px;}
+.daily-bars{display:flex;align-items:flex-end;gap:10px;height:150px;overflow-x:auto;padding:2px 2px 0;}
+.daily-bar-item{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:36px;flex:none;}
+.daily-bar-count{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:11px;font-weight:600;color:var(--ink-muted);margin-bottom:4px;}
+.daily-bar-track{width:24px;flex:1;display:flex;align-items:flex-end;}
+.daily-bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--border);}
+.daily-bar-fill.has-value{background:var(--accent);}
+.daily-bar-label{margin-top:8px;font-size:10px;color:var(--ink-muted);white-space:nowrap;}
+@media (max-width:640px){
+  .daily-chart-row{flex-direction:column;}
+  .daily-side-col{width:auto;border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px;display:flex;gap:28px;}
+  .daily-side-item{margin-bottom:0 !important;}
+}
 </style>
 </head>
 <body>
@@ -509,8 +523,6 @@
     var stats = '<div class="stat-grid" style="margin-bottom:22px;">' +
       '<div class="stat-tile"><div class="stat-value">' + total + '</div><div class="stat-label">전체 응답 수</div></div>' +
       '<div class="stat-tile"><div class="stat-value">' + Object.keys(uniqueParticipants).length + '</div><div class="stat-label">참여 닉네임 수(중복제외)</div></div>' +
-      '<div class="stat-tile"><div class="stat-value" style="font-size:15px;">' + (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '</div><div class="stat-label">시작</div></div>' +
-      '<div class="stat-tile"><div class="stat-value" style="font-size:15px;">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div><div class="stat-label">종료</div></div>' +
       '</div>';
 
     var todayKey = dateKeyLocal(new Date().toISOString());
@@ -531,16 +543,32 @@
       guard++;
     }
     var maxDaily = dailyList.reduce(function (m, d) { return Math.max(m, d.count); }, 0) || 1;
-    var dailyRows = dailyList.map(function (d) {
-      var pct = Math.round((d.count / maxDaily) * 100);
-      return '<div class="bar-row"><span class="bar-label">' + escapeHtml(d.label) + '</span>' +
-        '<span class="bar-count">' + d.count + '명</span>' +
-        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
+    var dailyBars = dailyList.map(function (d) {
+      var pct = Math.max(Math.round((d.count / maxDaily) * 100), d.count > 0 ? 6 : 2);
+      return '<div class="daily-bar-item">' +
+        '<span class="daily-bar-count">' + d.count + '</span>' +
+        '<div class="daily-bar-track"><div class="daily-bar-fill' + (d.count > 0 ? ' has-value' : '') + '" style="height:' + pct + '%;"></div></div>' +
+        '<span class="daily-bar-label">' + escapeHtml(d.label) + '</span>' +
+        '</div>';
     }).join('');
     var dailyCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
       '<div class="section-title" style="margin-bottom:6px;">날짜별 참여 현황</div>' +
-      '<p class="muted small" style="margin:0 0 10px;">설문 시작일부터 하루 단위 응답 수입니다.</p>' +
-      (dailyList.length ? '<div class="daily-scroll">' + dailyRows + '</div>' : '<p class="empty-note">데이터가 없습니다.</p>') +
+      '<p class="muted small" style="margin:0 0 12px;">설문 시작일부터 하루 단위 응답 수입니다.</p>' +
+      '<div class="daily-chart-row">' +
+      '<div class="daily-chart-col">' +
+      (dailyList.length ? '<div class="daily-bars">' + dailyBars + '</div>' : '<p class="empty-note">데이터가 없습니다.</p>') +
+      '</div>' +
+      '<div class="daily-side-col">' +
+      '<div class="daily-side-item" style="margin-bottom:16px;">' +
+      '<div class="field-hint" style="margin-bottom:2px;">시작</div>' +
+      '<div class="mono small">' + (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '</div>' +
+      '</div>' +
+      '<div class="daily-side-item">' +
+      '<div class="field-hint" style="margin-bottom:2px;">종료</div>' +
+      '<div class="mono small">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
       '</div>';
 
     var qBlocks = s.questions.map(function (q, idx) {
