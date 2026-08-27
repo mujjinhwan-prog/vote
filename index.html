@@ -119,7 +119,6 @@
     shell(
       '<div class="eyebrow" style="margin-bottom:10px;">SURVEY</div>' +
       '<h1 class="page-title" style="margin-bottom:6px;">' + escapeHtml(s.title) + '</h1>' +
-      (s.subtitle ? '<p class="muted small" style="margin:0 0 8px;">' + escapeHtml(s.subtitle) + '</p>' : '') +
       (s.end_at ? '<p class="muted small" style="margin:0 0 20px;">' + fmtDateTime(s.end_at) + '까지 참여 가능합니다.</p>' : '<div style="height:20px;"></div>') +
       (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
       '<form id="survey-form" class="card card-pad">' +

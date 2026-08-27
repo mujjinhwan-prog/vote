@@ -125,7 +125,6 @@
     return {
       id: null,
       title: '',
-      subtitle: '',
       choiceQuestionCount: 3,
       choicesPerQuestion: 4,
       textQuestionCount: 1,
@@ -136,7 +135,7 @@
   }
   function mapSurvey(row) {
     return {
-      id: row.id, title: row.title || '', subtitle: row.subtitle || '',
+      id: row.id, title: row.title || '',
       choiceQuestionCount: row.choice_question_count, choicesPerQuestion: row.choices_per_question,
       textQuestionCount: row.text_question_count, questions: row.questions || [],
       startAt: row.start_at || '', endAt: row.end_at || '', manualStatus: row.manual_status || 'auto',
@@ -384,8 +383,6 @@
       '<div class="section-title">' + (isEdit ? '설문 수정' : '새 설문 만들기') + '</div>' +
       '<div class="field"><label class="field-label">설문 제목</label>' +
       '<input type="text" id="d-title" value="' + escapeHtml(d.title) + '" placeholder="예: 2026년 하반기 VOY 만족도 조사"></div>' +
-      '<div class="field"><label class="field-label">부제 / 설명 (선택)</label>' +
-      '<textarea id="d-subtitle" placeholder="설문 목적이나 참고사항을 짧게 안내해주세요." style="min-height:64px;">' + escapeHtml(d.subtitle) + '</textarea></div>' +
 
       '<hr class="divider"><div class="eyebrow">문항 구성</div>' +
       '<div class="field-row">' +
@@ -426,7 +423,6 @@
     adminShell(body);
 
     document.getElementById('d-title').addEventListener('input', function (e) { DRAFT.title = e.target.value; });
-    document.getElementById('d-subtitle').addEventListener('input', function (e) { DRAFT.subtitle = e.target.value; });
     document.getElementById('d-choiceCount').addEventListener('input', function (e) { DRAFT.choiceQuestionCount = Math.max(0, parseInt(e.target.value || '0', 10)); });
     document.getElementById('d-choicesPer').addEventListener('input', function (e) { DRAFT.choicesPerQuestion = Math.max(2, parseInt(e.target.value || '2', 10)); });
     document.getElementById('d-textCount').addEventListener('input', function (e) { DRAFT.textQuestionCount = Math.max(0, parseInt(e.target.value || '0', 10)); });
@@ -553,7 +549,6 @@
       '<span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span>' +
       (s.isActive ? '<span class="badge badge-open">공개중</span>' : '') +
       '</div></div>' +
-      (s.subtitle ? '<p class="muted small" style="margin:0 0 14px;">' + escapeHtml(s.subtitle) + '</p>' : '') +
       stats +
       '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
       (s.questions.length ? qBlocks : '<p class="empty-note">문항이 없습니다.</p>') + '</div>' +
