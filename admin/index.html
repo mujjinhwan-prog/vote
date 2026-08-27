@@ -13,7 +13,10 @@
 .winner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px;}
 .winner-tile{padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);
   font-weight:600;text-align:center;font-size:14px;}
-.survey-row-actions{display:flex;gap:6px;flex-wrap:wrap;}
+.survey-row-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:190px;}
+.survey-row-actions .btn{width:100%;padding-left:8px;padding-right:8px;}
+.td-actions{white-space:normal !important;overflow:visible !important;max-width:none !important;vertical-align:top;padding-top:12px;padding-bottom:12px;}
+.daily-scroll{max-height:360px;overflow-y:auto;}
 </style>
 </head>
 <body>
@@ -87,6 +90,25 @@
     if (!v) return '';
     var d = new Date(v);
     return isNaN(d.getTime()) ? '' : d.toISOString();
+  }
+  function dateKeyLocal(iso) {
+    var d = new Date(iso);
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function addDaysToKey(key, n) {
+    var p = key.split('-').map(Number);
+    var d = new Date(p[0], p[1] - 1, p[2]);
+    d.setDate(d.getDate() + n);
+    var pad = function (x) { return String(x).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function fmtDateShort(key) {
+    var p = key.split('-').map(Number);
+    var d = new Date(p[0], p[1] - 1, p[2]);
+    var days = ['일', '월', '화', '수', '목', '금', '토'];
+    var pad = function (x) { return String(x).padStart(2, '0'); };
+    return pad(p[1]) + '.' + pad(p[2]) + '(' + days[d.getDay()] + ')';
   }
   function getStatus(s) {
     if (!s || !s.questions || s.questions.length === 0 || !s.title) return 'draft';
@@ -268,7 +290,7 @@
         '<td><span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span></td>' +
         '<td class="mono">' + s.responseCount + '</td>' +
         '<td class="mono">' + fmtDateTime(s.createdAt) + '</td>' +
-        '<td><div class="survey-row-actions">' +
+        '<td class="td-actions"><div class="survey-row-actions">' +
         '<button class="btn btn-ghost btn-sm" data-results="' + s.id + '">결과 보기</button>' +
         '<button class="btn btn-ghost btn-sm" data-edit="' + s.id + '">수정</button>' +
         (s.isActive
@@ -491,6 +513,36 @@
       '<div class="stat-tile"><div class="stat-value" style="font-size:15px;">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div><div class="stat-label">종료</div></div>' +
       '</div>';
 
+    var todayKey = dateKeyLocal(new Date().toISOString());
+    var startKey = s.startAt ? dateKeyLocal(s.startAt) : (responses.length ? dateKeyLocal(responses[0].submitted_at) : todayKey);
+    var lastRespKey = responses.length ? dateKeyLocal(responses[responses.length - 1].submitted_at) : startKey;
+    var endKey = (status === 'open' && todayKey > lastRespKey) ? todayKey : lastRespKey;
+    if (endKey < startKey) endKey = startKey;
+
+    var dayCounts = {};
+    responses.forEach(function (r) { var k = dateKeyLocal(r.submitted_at); dayCounts[k] = (dayCounts[k] || 0) + 1; });
+
+    var dailyList = [];
+    var cursor = startKey, guard = 0;
+    while (guard < 366) {
+      dailyList.push({ key: cursor, label: fmtDateShort(cursor), count: dayCounts[cursor] || 0 });
+      if (cursor === endKey) break;
+      cursor = addDaysToKey(cursor, 1);
+      guard++;
+    }
+    var maxDaily = dailyList.reduce(function (m, d) { return Math.max(m, d.count); }, 0) || 1;
+    var dailyRows = dailyList.map(function (d) {
+      var pct = Math.round((d.count / maxDaily) * 100);
+      return '<div class="bar-row"><span class="bar-label">' + escapeHtml(d.label) + '</span>' +
+        '<span class="bar-count">' + d.count + '명</span>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
+    }).join('');
+    var dailyCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
+      '<div class="section-title" style="margin-bottom:6px;">날짜별 참여 현황</div>' +
+      '<p class="muted small" style="margin:0 0 10px;">설문 시작일부터 하루 단위 응답 수입니다.</p>' +
+      (dailyList.length ? '<div class="daily-scroll">' + dailyRows + '</div>' : '<p class="empty-note">데이터가 없습니다.</p>') +
+      '</div>';
+
     var qBlocks = s.questions.map(function (q, idx) {
       if (q.type === 'choice') {
         var counts = q.choices.map(function () { return 0; });
@@ -556,6 +608,7 @@
       (s.isActive ? '<span class="badge badge-open">공개중</span>' : '') +
       '</div></div>' +
       stats +
+      dailyCard +
       '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
       (s.questions.length ? qBlocks : '<p class="empty-note">문항이 없습니다.</p>') + '</div>' +
       drawCard +

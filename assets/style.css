@@ -184,7 +184,7 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .theme-toggle,.modal-backdrop,.tabs,.foot-link,#back-list,.survey-row-actions,.btn,input,#draw-stage{display:none !important;}
   .admin-shell{max-width:100%;padding:0;}
   .card{border:1px solid #ccc;box-shadow:none;}
-  .answer-list{max-height:none;overflow:visible;}
+  .answer-list,.daily-scroll{max-height:none;overflow:visible;}
   .table-scroll{overflow:visible;border:none;}
   table{width:100%;font-size:11px;}
   .q-result-card,.stat-tile{break-inside:avoid;}
