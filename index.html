@@ -60,6 +60,7 @@
       var body;
       if (q.type === 'choice') {
         body = '<div class="choice-list">' + q.choices.map(function (c, ci) {
+          if (!c || !String(c).trim()) return '';
           return '<label class="choice-option"><input type="radio" name="q_' + q.id + '" value="' + ci + '">' +
             '<span>' + escapeHtml(c) + '</span></label>';
         }).join('') + '</div>';

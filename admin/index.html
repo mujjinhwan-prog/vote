@@ -72,7 +72,7 @@
       var prev = existingChoice[i];
       var text = prev ? prev.text : ('문항 ' + (i + 1));
       var choices = prev ? prev.choices.slice(0, choicesPerQ) : [];
-      while (choices.length < choicesPerQ) choices.push('선택지 ' + (choices.length + 1));
+      while (choices.length < choicesPerQ) choices.push('');
       out.push({ id: prev ? prev.id : uid('c'), type: 'choice', text: text, choices: choices });
     }
     for (var j = 0; j < textCount; j++) {
@@ -117,7 +117,7 @@
   var SURVEYS = [];
   var DRAFT = null;
   var CURRENT = null;         // { survey, responses, draw }
-  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '' };
+  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '' };
 
   try { PASSCODE = sessionStorage.getItem('voy_admin_passcode') || null; } catch (e) {}
 
@@ -174,7 +174,7 @@
   /* ---------------- shell / nav ---------------- */
   function adminShell(bodyHtml) {
     var html = '<div class="admin-shell">' + brandHtml('left') +
-      '<div class="admin-top"><div class="admin-title-row">' +
+      '<div class="admin-top shell-header"><div class="admin-title-row">' +
       '<div class="eyebrow">ADMIN</div><h1 class="section-title" style="font-size:19px;">Voice of YUHAN 설문 관리</h1>' +
       '</div>' +
       '<div class="tabs">' +
@@ -237,6 +237,7 @@
         (s.isActive
           ? '<button class="btn btn-ghost btn-sm" data-deactivate="' + s.id + '">비활성화</button>'
           : '<button class="btn btn-ghost btn-sm" data-activate="' + s.id + '">활성화</button>') +
+        '<button class="btn btn-danger btn-sm" data-delete-survey="' + s.id + '" data-delete-title="' + escapeHtml(s.title || '(제목 없음)') + '">삭제</button>' +
         '</div></td></tr>';
     }).join('');
 
@@ -244,10 +245,19 @@
       ? '<div class="table-scroll"><table><thead><tr><th>제목</th><th>상태</th><th>응답수</th><th>생성일</th><th>관리</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       : '<p class="empty-note">아직 만든 설문이 없습니다. "설문 만들기" 탭에서 첫 설문을 만들어보세요.</p>';
 
+    var deleteModal = UI.deleteSurveyId
+      ? '<div class="modal-backdrop" id="delete-survey-backdrop"><div class="card card-pad modal-card">' +
+        '<h2 class="section-title" style="margin-bottom:10px;">설문을 삭제할까요?</h2>' +
+        '<p class="muted small" style="margin:0 0 18px;">"' + escapeHtml(UI.deleteSurveyTitle || '') + '" 설문과 응답, 추첨 결과가 모두 삭제되며 되돌릴 수 없습니다.</p>' +
+        '<div style="display:flex;gap:10px;"><button class="btn btn-ghost" id="delete-survey-cancel" style="flex:1;">취소</button>' +
+        '<button class="btn btn-danger" id="delete-survey-confirm" style="flex:1;border-color:var(--danger);">삭제</button></div>' +
+        '</div></div>'
+      : '';
+
     adminShell(linkCard + '<div class="card card-pad">' +
       '<div class="admin-top" style="margin-bottom:14px;"><div class="section-title">설문 목록</div>' +
       '<button class="btn btn-primary btn-sm" data-nav="create">+ 새 설문 만들기</button></div>' +
-      table + '</div>');
+      table + '</div>' + deleteModal);
 
     document.querySelectorAll('[data-results]').forEach(function (b) { b.addEventListener('click', function () { goto('results', b.getAttribute('data-results')); }); });
     document.querySelectorAll('[data-edit]').forEach(function (b) {
@@ -273,6 +283,27 @@
           .catch(handleApiError);
       });
     });
+    document.querySelectorAll('[data-delete-survey]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.deleteSurveyId = b.getAttribute('data-delete-survey');
+        UI.deleteSurveyTitle = b.getAttribute('data-delete-title');
+        render();
+      });
+    });
+    var deleteBackdrop = document.getElementById('delete-survey-backdrop');
+    if (deleteBackdrop) {
+      document.getElementById('delete-survey-cancel').addEventListener('click', function () {
+        UI.deleteSurveyId = null; UI.deleteSurveyTitle = ''; render();
+      });
+      document.getElementById('delete-survey-confirm').addEventListener('click', function () {
+        var id = UI.deleteSurveyId;
+        UI.deleteSurveyId = null; UI.deleteSurveyTitle = '';
+        UI.busy = true; render();
+        api('delete_survey', { id: id })
+          .then(function () { UI.flash = '설문을 삭제했습니다.'; loadList(); })
+          .catch(handleApiError);
+      });
+    }
     document.querySelectorAll('[data-copy]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var input = document.getElementById(btn.getAttribute('data-copy'));
@@ -301,8 +332,9 @@
         return '<div class="question-block">' +
           '<label class="field-label"><span class="question-num">문항 ' + (idx + 1) + '</span>선택형</label>' +
           '<input type="text" data-q="' + q.id + '" data-field="text" value="' + escapeHtml(q.text) + '" style="margin-bottom:10px;">' +
+          '<div class="field-hint" style="margin:0 0 8px;">비워두면 그 선택지는 설문조사 화면에 표시되지 않습니다. 예: 선택지를 2개만 입력하면 2개만 노출됩니다.</div>' +
           q.choices.map(function (c, ci) {
-            return '<input type="text" data-q="' + q.id + '" data-choice="' + ci + '" value="' + escapeHtml(c) + '" style="margin-bottom:8px;">';
+            return '<input type="text" data-q="' + q.id + '" data-choice="' + ci + '" value="' + escapeHtml(c) + '" placeholder="선택지 ' + (ci + 1) + ' (비워두면 미노출)" style="margin-bottom:8px;">';
           }).join('') + '</div>';
       }
       return '<div class="question-block">' +
@@ -430,6 +462,7 @@
         var counts = q.choices.map(function () { return 0; });
         responses.forEach(function (r) { var a = r.answers[q.id]; if (typeof a === 'number' && counts[a] !== undefined) counts[a]++; });
         var rows = q.choices.map(function (c, ci) {
+          if (!c || !String(c).trim()) return '';
           var pct = total ? Math.round((counts[ci] / total) * 100) : 0;
           return '<div class="bar-row"><span class="bar-label">' + escapeHtml(c) + '</span>' +
             '<span class="bar-count">' + counts[ci] + '건 · ' + pct + '%</span>' +

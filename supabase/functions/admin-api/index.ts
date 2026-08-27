@@ -141,6 +141,14 @@ Deno.serve(async (req) => {
         return json({ survey: data });
       }
 
+      case "delete_survey": {
+        const id = payload && payload.id;
+        if (!id) return json({ error: "missing_id" });
+        const { error } = await supabase.from("surveys").delete().eq("id", id);
+        if (error) return json({ error: "db_error", detail: error.message });
+        return json({ ok: true });
+      }
+
       case "get_survey_results": {
         const id = payload && payload.id;
         if (!id) return json({ error: "missing_id" });
