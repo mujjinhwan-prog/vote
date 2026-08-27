@@ -8,6 +8,15 @@
 <link rel="icon" href="data:,">
 </head>
 <body>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('voy_theme');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<div id="theme-toggle-mount"></div>
 <div id="app"><div class="survey-shell"><div class="boot-loading">불러오는 중…</div></div></div>
 
 <script src="/config.js"></script>
@@ -15,6 +24,35 @@
 <script>
 (function () {
   var sb = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+
+  /* ---------------- theme toggle ---------------- */
+  var ICON_PALETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 100 20c1.1 0 2-.9 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.4c1.9 0 3.6-1.6 3.6-3.6C21 6.5 17 2 12 2z"/><circle cx="7.2" cy="10.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.8" cy="6.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="12.8" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  var ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+  var ICON_MOON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+
+  function getTheme() {
+    try { return localStorage.getItem('voy_theme') === 'dark' ? 'dark' : 'light'; } catch (e) { return 'light'; }
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('voy_theme', t); } catch (e) {}
+    renderThemeToggle();
+  }
+  function renderThemeToggle() {
+    var mount = document.getElementById('theme-toggle-mount');
+    if (!mount) return;
+    var t = getTheme();
+    mount.innerHTML =
+      '<div class="theme-toggle">' +
+      '<span class="theme-toggle-label">' + ICON_PALETTE + '<span class="label-text">테마 설정</span></span>' +
+      '<span class="theme-toggle-btns">' +
+      '<button type="button" class="theme-btn' + (t === 'light' ? ' active' : '') + '" id="theme-btn-light" aria-label="라이트 테마">' + ICON_SUN + '</button>' +
+      '<button type="button" class="theme-btn' + (t === 'dark' ? ' active' : '') + '" id="theme-btn-dark" aria-label="다크 테마">' + ICON_MOON + '</button>' +
+      '</span></div>';
+    document.getElementById('theme-btn-light').addEventListener('click', function () { setTheme('light'); });
+    document.getElementById('theme-btn-dark').addEventListener('click', function () { setTheme('dark'); });
+  }
+  renderThemeToggle();
 
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -42,8 +80,12 @@
 
   var brandHtml = '<div class="brand-row"><img class="brand-logo" src="/assets/logo.webp" alt="Voice of YUHAN"></div>';
 
+  var siteFooterHtml = '<p class="muted small" style="text-align:center;margin-top:32px;line-height:1.7;">' +
+    '영업현장의 참고서 VOY,<br>여러분의 관심과 참여로 만들어 집니다.<br><br>' +
+    'ⓒ 2026 YUHAN Sales Planning Team. All rights reserved.</p>';
+
   function shell(inner) {
-    document.getElementById('app').innerHTML = '<div class="survey-shell">' + brandHtml + inner + '</div>';
+    document.getElementById('app').innerHTML = '<div class="survey-shell">' + brandHtml + inner + siteFooterHtml + '</div>';
   }
   function centeredCard(inner) {
     return '<div class="card card-pad" style="text-align:center;">' + inner + '</div>';
@@ -88,8 +130,7 @@
       qHtml +
       '<div style="margin-top:22px;"><button type="submit" class="btn btn-primary btn-block"' + (UI.submitting ? ' disabled' : '') + '>' +
       (UI.submitting ? '제출 중…' : '제출하기') + '</button></div>' +
-      '</form>' +
-      '<p class="muted small" style="text-align:center;margin-top:22px;line-height:1.7;">영업현장의 참고서 VOY, 여러분의 관심과 참여로 만들어 집니다.<br><br>설문조사 감사합니다.</p>'
+      '</form>'
     );
 
     var form = document.getElementById('survey-form');
