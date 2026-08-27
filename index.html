@@ -3,9 +3,35 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voice of YUHAN</title>
+<title>Voice of YUHAN 관리자</title>
 <link rel="stylesheet" href="/assets/style.css">
 <link rel="icon" href="data:,">
+<style>
+.draw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 0;}
+.draw-reel{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:22px;font-weight:600;color:var(--accent);
+  background:var(--surface-2);border-radius:12px;padding:16px 24px;min-width:220px;text-align:center;}
+.winner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:14px;}
+.winner-tile{padding:12px;border-radius:10px;background:var(--accent-soft);color:var(--accent);
+  font-weight:600;text-align:center;font-size:14px;}
+.survey-row-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;width:190px;}
+.survey-row-actions .btn{width:100%;padding-left:8px;padding-right:8px;}
+.td-actions{white-space:normal !important;overflow:visible !important;max-width:none !important;vertical-align:top;padding-top:12px;padding-bottom:12px;}
+.daily-chart-row{display:flex;gap:22px;align-items:stretch;}
+.daily-chart-col{flex:1;min-width:0;}
+.daily-side-col{flex:none;width:150px;border-left:1px solid var(--border);padding-left:18px;}
+.daily-bars{display:flex;align-items:flex-end;gap:10px;height:150px;overflow-x:auto;padding:2px 2px 0;}
+.daily-bar-item{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:36px;flex:none;}
+.daily-bar-count{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mono",monospace;font-size:11px;font-weight:600;color:var(--ink-muted);margin-bottom:4px;}
+.daily-bar-track{width:24px;flex:1;display:flex;align-items:flex-end;}
+.daily-bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--border);}
+.daily-bar-fill.has-value{background:var(--accent);}
+.daily-bar-label{margin-top:8px;font-size:10px;color:var(--ink-muted);white-space:nowrap;}
+@media (max-width:640px){
+  .daily-chart-row{flex-direction:column;}
+  .daily-side-col{width:auto;border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px;display:flex;gap:28px;}
+  .daily-side-item{margin-bottom:0 !important;}
+}
+</style>
 </head>
 <body>
 <script>
@@ -17,7 +43,7 @@
 })();
 </script>
 <div id="theme-toggle-mount"></div>
-<div id="app"><div class="survey-shell"><div class="boot-loading">불러오는 중…</div></div></div>
+<div id="app"><div class="admin-shell"><div class="boot-loading">불러오는 중…</div></div></div>
 
 <script src="/config.js"></script>
 <script src="/assets/supabase-js.min.js"></script>
@@ -54,186 +80,700 @@
   }
   renderThemeToggle();
 
+  /* ---------------- helpers ---------------- */
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  function uid(prefix) { return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function fmtDateTime(iso) {
     if (!iso) return '';
-    try {
-      return new Date(iso).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    } catch (e) { return iso; }
+    try { return new Date(iso).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }); }
+    catch (e) { return iso; }
   }
-  function getStatus(survey) {
-    if (!survey || !survey.questions || survey.questions.length === 0 || !survey.title) return 'draft';
-    if (survey.manual_status === 'forceOpen') return 'open';
-    if (survey.manual_status === 'forceClosed') return 'closed';
+  function toLocalInputValue(iso) {
+    if (!iso) return '';
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+  }
+  function fromLocalInputValue(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    return isNaN(d.getTime()) ? '' : d.toISOString();
+  }
+  function dateKeyLocal(iso) {
+    var d = new Date(iso);
+    var pad = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function addDaysToKey(key, n) {
+    var p = key.split('-').map(Number);
+    var d = new Date(p[0], p[1] - 1, p[2]);
+    d.setDate(d.getDate() + n);
+    var pad = function (x) { return String(x).padStart(2, '0'); };
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function fmtDateShort(key) {
+    var p = key.split('-').map(Number);
+    var d = new Date(p[0], p[1] - 1, p[2]);
+    var days = ['일', '월', '화', '수', '목', '금', '토'];
+    var pad = function (x) { return String(x).padStart(2, '0'); };
+    return pad(p[1]) + '.' + pad(p[2]) + '(' + days[d.getDay()] + ')';
+  }
+  function getStatus(s) {
+    if (!s || !s.questions || s.questions.length === 0 || !s.title) return 'draft';
+    if (s.manualStatus === 'forceOpen') return 'open';
+    if (s.manualStatus === 'forceClosed') return 'closed';
     var now = Date.now();
-    var start = survey.start_at ? new Date(survey.start_at).getTime() : null;
-    var end = survey.end_at ? new Date(survey.end_at).getTime() : null;
+    var start = s.startAt ? new Date(s.startAt).getTime() : null;
+    var end = s.endAt ? new Date(s.endAt).getTime() : null;
     if (start && now < start) return 'before';
     if (end && now > end) return 'closed';
     return 'open';
   }
   var STATUS_LABEL = { draft: '준비 중', before: '시작 전', open: '진행 중', closed: '종료됨' };
 
-  var brandHtml = '<div class="brand-row"><img class="brand-logo" src="/assets/logo.webp" alt="Voice of YUHAN"></div>';
-
-  var siteFooterHtml = '<p class="muted small" style="text-align:center;margin-top:32px;line-height:1.7;">' +
-    '영업현장의 참고서 VOY,<br>여러분의 관심과 참여로 만들어 집니다.<br>설문조사 감사합니다.</p>' +
-    '<p class="muted small" style="text-align:center;margin-top:16px;line-height:1.7;">' +
-    'ⓒ 2026 YUHAN Sales Planning Team.</p>';
-
-  function shell(inner) {
-    document.getElementById('app').innerHTML = '<div class="survey-shell">' + brandHtml + inner + siteFooterHtml + '</div>';
+  function regenerateQuestions(existing, choiceCount, choicesPerQ, textCount) {
+    existing = existing || [];
+    var existingChoice = existing.filter(function (q) { return q.type === 'choice'; });
+    var existingText = existing.filter(function (q) { return q.type === 'text'; });
+    var out = [];
+    for (var i = 0; i < choiceCount; i++) {
+      var prev = existingChoice[i];
+      var text = prev ? prev.text : ('문항 ' + (i + 1));
+      var choices = prev ? prev.choices.slice(0, choicesPerQ) : [];
+      while (choices.length < choicesPerQ) choices.push('');
+      out.push({ id: prev ? prev.id : uid('c'), type: 'choice', text: text, choices: choices });
+    }
+    for (var j = 0; j < textCount; j++) {
+      var prevT = existingText[j];
+      var textT = prevT ? prevT.text : ('하고 싶은 말 ' + (j + 1));
+      out.push({ id: prevT ? prevT.id : uid('t'), type: 'text', text: textT });
+    }
+    return out;
   }
-  function centeredCard(inner) {
-    return '<div class="card card-pad" style="text-align:center;">' + inner + '</div>';
+
+  function blankDraft() {
+    return {
+      id: null,
+      title: '',
+      choiceQuestionCount: 3,
+      choicesPerQuestion: 4,
+      textQuestionCount: 1,
+      questions: regenerateQuestions([], 3, 4, 1),
+      startAt: '', endAt: '', manualStatus: 'auto',
+      activateNow: false,
+    };
+  }
+  function mapSurvey(row) {
+    return {
+      id: row.id, title: row.title || '',
+      choiceQuestionCount: row.choice_question_count, choicesPerQuestion: row.choices_per_question,
+      textQuestionCount: row.text_question_count, questions: row.questions || [],
+      startAt: row.start_at || '', endAt: row.end_at || '', manualStatus: row.manual_status || 'auto',
+      isActive: !!row.is_active, createdAt: row.created_at, updatedAt: row.updated_at,
+      responseCount: row.response_count || 0,
+    };
   }
 
-  var UI = { invalidField: '', submitting: false, submitError: '' };
-  var SURVEY = null;
+  var brandHtml = function (align) {
+    return '<div class="brand-row' + (align === 'left' ? ' left' : '') + '"><img class="brand-logo" src="/assets/logo.webp" alt="Voice of YUHAN"></div>';
+  };
 
-  function renderForm() {
-    var s = SURVEY;
-    var nicknameInvalid = UI.invalidField === 'nickname';
-    var qHtml = s.questions.map(function (q, idx) {
-      var invalid = UI.invalidField === q.id;
-      var body;
-      if (q.type === 'choice') {
-        body = '<div class="choice-list">' + q.choices.map(function (c, ci) {
-          if (!c || !String(c).trim()) return '';
-          return '<label class="choice-option"><input type="radio" name="q_' + q.id + '" value="' + ci + '">' +
-            '<span>' + escapeHtml(c) + '</span></label>';
-        }).join('') + '</div>';
-      } else {
-        body = '<textarea name="t_' + q.id + '" placeholder="자유롭게 의견을 남겨주세요"></textarea>';
-      }
-      return '<div class="question-block' + (invalid ? ' invalid' : '') + '" data-qid="' + q.id + '">' +
-        '<div class="section-title"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' +
-        escapeHtml(q.text) + (q.type === 'choice' ? '<span class="required-mark">*</span>' : '') + '</div>' +
-        body + (invalid ? '<div class="error-text">이 문항에 응답해주세요.</div>' : '') + '</div>';
+  /* ---------------- state ---------------- */
+  var PASSCODE = null;
+  var VIEW = 'gate';          // gate | list | create | results
+  var SURVEYS = [];
+  var DRAFT = null;
+  var CURRENT = null;         // { survey, responses, draw }
+  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '', viewResponseId: null };
+
+  try { PASSCODE = sessionStorage.getItem('voy_admin_passcode') || null; } catch (e) {}
+
+  /* ---------------- api ---------------- */
+  function api(action, payload) {
+    return sb.functions.invoke('admin-api', { body: { passcode: PASSCODE, action: action, payload: payload || {} } })
+      .then(function (res) {
+        if (res.error) throw { code: 'network', message: res.error.message || '네트워크 오류' };
+        if (res.data && res.data.error) throw { code: res.data.error, message: res.data.detail || res.data.error };
+        return res.data;
+      });
+  }
+
+  /* ---------------- gate ---------------- */
+  function renderGate() {
+    document.getElementById('app').innerHTML =
+      '<div class="gate-shell">' + brandHtml() +
+      '<div class="eyebrow" style="margin-bottom:8px;">ADMIN</div>' +
+      '<h1 class="section-title" style="font-size:20px;margin-bottom:18px;">관리자 로그인</h1>' +
+      '<div class="card card-pad">' +
+      '<input type="password" id="gate-input" placeholder="비밀번호" autocomplete="off">' +
+      (UI.passcodeError ? '<div class="error-text">' + escapeHtml(UI.passcodeError) + '</div>' : '') +
+      '<button id="gate-submit" class="btn btn-primary btn-block" style="margin-top:14px;"' + (UI.busy ? ' disabled' : '') + '>' +
+      (UI.busy ? '확인 중…' : '입장') + '</button>' +
+      '</div>' +
+      '<div class="foot-link"><a href="/">설문조사 페이지로 이동</a></div>' +
+      '</div>';
+    var input = document.getElementById('gate-input');
+    var submit = function () { tryPasscode(input.value); };
+    document.getElementById('gate-submit').addEventListener('click', submit);
+    input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    input.focus();
+  }
+
+  function tryPasscode(value) {
+    value = (value || '').trim();
+    if (!value) { UI.passcodeError = '비밀번호를 입력해주세요.'; render(); return; }
+    PASSCODE = value;
+    UI.busy = true; UI.passcodeError = ''; render();
+    api('list_surveys', {}).then(function (data) {
+      try { sessionStorage.setItem('voy_admin_passcode', value); } catch (e) {}
+      SURVEYS = (data.surveys || []).map(mapSurvey);
+      UI.busy = false;
+      VIEW = 'list';
+      render();
+    }).catch(function (err) {
+      PASSCODE = null;
+      UI.busy = false;
+      UI.passcodeError = err.code === 'invalid_passcode' ? '비밀번호가 올바르지 않습니다.' : '연결 중 문제가 발생했습니다.';
+      render();
+    });
+  }
+
+  /* ---------------- shell / nav ---------------- */
+  function adminShell(bodyHtml) {
+    var html = '<div class="admin-shell">' + brandHtml('left') +
+      '<div class="admin-top shell-header"><div class="admin-title-row">' +
+      '<div class="eyebrow">ADMIN</div><h1 class="section-title" style="font-size:19px;">Voice of YUHAN 설문 관리</h1>' +
+      '</div>' +
+      '<div class="tabs">' +
+      '<button class="tab-btn' + (VIEW === 'list' ? ' active' : '') + '" data-nav="list">설문 목록</button>' +
+      '<button class="tab-btn' + (VIEW === 'create' ? ' active' : '') + '" data-nav="create">설문 만들기</button>' +
+      '</div></div>';
+    if (UI.flash) html += '<div class="flash">' + escapeHtml(UI.flash) + '</div>';
+    if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
+    html += bodyHtml;
+    html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div></div>';
+    document.getElementById('app').innerHTML = html;
+    document.querySelectorAll('[data-nav]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.error = ''; UI.flash = '';
+        var target = b.getAttribute('data-nav');
+        if (target === 'create') { DRAFT = blankDraft(); }
+        goto(target);
+      });
+    });
+  }
+
+  function goto(view, extra) {
+    VIEW = view;
+    if (view === 'list') loadList();
+    else if (view === 'results') loadResults(extra);
+    else render();
+  }
+
+  /* ---------------- list view ---------------- */
+  function loadList() {
+    UI.busy = true; render();
+    api('list_surveys', {}).then(function (data) {
+      SURVEYS = (data.surveys || []).map(mapSurvey);
+      UI.busy = false;
+      render();
+    }).catch(handleApiError);
+  }
+
+  function renderList() {
+    var origin = location.origin;
+    var linkCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
+      '<div class="eyebrow" style="margin-bottom:6px;">공유 링크</div>' +
+      '<div class="link-row" style="margin-bottom:8px;"><input type="text" readonly value="' + escapeHtml(origin + '/') + '" id="link-survey">' +
+      '<button class="btn btn-ghost btn-sm" data-copy="link-survey">복사</button></div>' +
+      '<div class="link-row"><input type="text" readonly value="' + escapeHtml(origin + '/admin') + '" id="link-admin">' +
+      '<button class="btn btn-ghost btn-sm" data-copy="link-admin">복사</button></div>' +
+      '<div class="field-hint">설문조사 페이지에는 "활성" 상태인 설문 1개만 노출됩니다.</div>' +
+      '</div>';
+
+    var rows = SURVEYS.map(function (s) {
+      var status = getStatus(s);
+      return '<tr>' +
+        '<td>' + escapeHtml(s.title || '(제목 없음)') + (s.isActive ? ' <span class="badge badge-open" style="margin-left:6px;">활성</span>' : '') + '</td>' +
+        '<td><span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span></td>' +
+        '<td class="mono">' + s.responseCount + '</td>' +
+        '<td class="mono">' + fmtDateTime(s.createdAt) + '</td>' +
+        '<td class="td-actions"><div class="survey-row-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-results="' + s.id + '">결과 보기</button>' +
+        '<button class="btn btn-ghost btn-sm" data-edit="' + s.id + '">수정</button>' +
+        (s.isActive
+          ? '<button class="btn btn-ghost btn-sm" data-deactivate="' + s.id + '">비활성화</button>'
+          : '<button class="btn btn-ghost btn-sm" data-activate="' + s.id + '">활성화</button>') +
+        '<button class="btn btn-danger btn-sm" data-delete-survey="' + s.id + '" data-delete-title="' + escapeHtml(s.title || '(제목 없음)') + '">삭제</button>' +
+        '</div></td></tr>';
     }).join('');
 
-    shell(
-      '<div class="eyebrow" style="margin-bottom:10px;">SURVEY</div>' +
-      '<h1 class="page-title" style="margin-bottom:6px;">' + escapeHtml(s.title) + '</h1>' +
-      (s.end_at ? '<p class="muted small" style="margin:0 0 20px;">' + fmtDateTime(s.end_at) + '까지 참여 가능합니다.</p>' : '<div style="height:20px;"></div>') +
-      (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
-      '<form id="survey-form" class="card card-pad">' +
-      '<div class="question-block' + (nicknameInvalid ? ' invalid' : '') + '" data-qid="nickname">' +
-      '<label class="field-label" for="nickname-input">당신의 VOY 닉네임은?<span class="required-mark">*</span></label>' +
-      '<input type="text" id="nickname-input" name="nickname" placeholder="ex) 롱다리웰시코기45" maxlength="30" autocomplete="off">' +
-      (nicknameInvalid ? '<div class="error-text">닉네임을 입력해주세요.</div>' : '') +
-      '</div>' +
-      qHtml +
-      '<div style="margin-top:22px;"><button type="submit" class="btn btn-primary btn-block"' + (UI.submitting ? ' disabled' : '') + '>' +
-      (UI.submitting ? '제출 중…' : '제출하기') + '</button></div>' +
-      '</form>'
-    );
+    var table = SURVEYS.length
+      ? '<div class="table-scroll"><table><thead><tr><th>제목</th><th>상태</th><th>응답수</th><th>생성일</th><th>관리</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      : '<p class="empty-note">아직 만든 설문이 없습니다. "설문 만들기" 탭에서 첫 설문을 만들어보세요.</p>';
 
-    var form = document.getElementById('survey-form');
-    form.querySelectorAll('.choice-option input').forEach(function (input) {
+    var deleteModal = UI.deleteSurveyId
+      ? '<div class="modal-backdrop" id="delete-survey-backdrop"><div class="card card-pad modal-card">' +
+        '<h2 class="section-title" style="margin-bottom:10px;">설문을 삭제할까요?</h2>' +
+        '<p class="muted small" style="margin:0 0 18px;">"' + escapeHtml(UI.deleteSurveyTitle || '') + '" 설문과 응답, 추첨 결과가 모두 삭제되며 되돌릴 수 없습니다.</p>' +
+        '<div style="display:flex;gap:10px;"><button class="btn btn-ghost" id="delete-survey-cancel" style="flex:1;">취소</button>' +
+        '<button class="btn btn-danger" id="delete-survey-confirm" style="flex:1;border-color:var(--danger);">삭제</button></div>' +
+        '</div></div>'
+      : '';
+
+    adminShell(linkCard + '<div class="card card-pad">' +
+      '<div class="admin-top" style="margin-bottom:14px;"><div class="section-title">설문 목록</div>' +
+      '<button class="btn btn-primary btn-sm" data-nav="create">+ 새 설문 만들기</button></div>' +
+      table + '</div>' + deleteModal);
+
+    document.querySelectorAll('[data-results]').forEach(function (b) { b.addEventListener('click', function () { goto('results', b.getAttribute('data-results')); }); });
+    document.querySelectorAll('[data-edit]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var s = SURVEYS.find(function (x) { return x.id === b.getAttribute('data-edit'); });
+        DRAFT = clone(s); DRAFT.activateNow = false;
+        goto('create');
+      });
+    });
+    document.querySelectorAll('[data-activate]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.busy = true; render();
+        api('activate_survey', { id: b.getAttribute('data-activate') })
+          .then(function () { UI.flash = '설문을 활성화했습니다.'; loadList(); })
+          .catch(handleApiError);
+      });
+    });
+    document.querySelectorAll('[data-deactivate]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.busy = true; render();
+        api('deactivate_survey', { id: b.getAttribute('data-deactivate') })
+          .then(function () { UI.flash = '설문을 비활성화했습니다.'; loadList(); })
+          .catch(handleApiError);
+      });
+    });
+    document.querySelectorAll('[data-delete-survey]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.deleteSurveyId = b.getAttribute('data-delete-survey');
+        UI.deleteSurveyTitle = b.getAttribute('data-delete-title');
+        render();
+      });
+    });
+    var deleteBackdrop = document.getElementById('delete-survey-backdrop');
+    if (deleteBackdrop) {
+      document.getElementById('delete-survey-cancel').addEventListener('click', function () {
+        UI.deleteSurveyId = null; UI.deleteSurveyTitle = ''; render();
+      });
+      document.getElementById('delete-survey-confirm').addEventListener('click', function () {
+        var id = UI.deleteSurveyId;
+        UI.deleteSurveyId = null; UI.deleteSurveyTitle = '';
+        UI.busy = true; render();
+        api('delete_survey', { id: id })
+          .then(function () { UI.flash = '설문을 삭제했습니다.'; loadList(); })
+          .catch(handleApiError);
+      });
+    }
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.getAttribute('data-copy'));
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(input.value).then(function () {
+            UI.flash = '복사되었습니다.'; render(); setTimeout(function () { UI.flash = ''; render(); }, 1500);
+          }).catch(function () { input.select(); });
+        } else { input.select(); }
+      });
+    });
+  }
+
+  /* ---------------- create/edit view ---------------- */
+  function manualStatusOption(d, value, label) {
+    var checked = (d.manualStatus || 'auto') === value;
+    return '<label class="choice-option' + (checked ? ' checked' : '') + '">' +
+      '<input type="radio" name="draft-manual-status" value="' + value + '"' + (checked ? ' checked' : '') + '>' +
+      '<span>' + escapeHtml(label) + '</span></label>';
+  }
+
+  function renderCreate() {
+    var d = DRAFT;
+    var isEdit = !!d.id;
+    var qEditHtml = d.questions.map(function (q, idx) {
+      if (q.type === 'choice') {
+        return '<div class="question-block">' +
+          '<label class="field-label"><span class="question-num">문항 ' + (idx + 1) + '</span>선택형</label>' +
+          '<input type="text" data-q="' + q.id + '" data-field="text" value="' + escapeHtml(q.text) + '" style="margin-bottom:10px;">' +
+          '<div class="field-hint" style="margin:0 0 8px;">비워두면 그 선택지는 설문조사 화면에 표시되지 않습니다. 예: 선택지를 2개만 입력하면 2개만 노출됩니다.</div>' +
+          q.choices.map(function (c, ci) {
+            return '<input type="text" data-q="' + q.id + '" data-choice="' + ci + '" value="' + escapeHtml(c) + '" placeholder="선택지 ' + (ci + 1) + ' (비워두면 미노출)" style="margin-bottom:8px;">';
+          }).join('') + '</div>';
+      }
+      return '<div class="question-block">' +
+        '<label class="field-label"><span class="question-num">문항 ' + (idx + 1) + '</span>주관식 (하고 싶은 말)</label>' +
+        '<input type="text" data-q="' + q.id + '" data-field="text" value="' + escapeHtml(q.text) + '"></div>';
+    }).join('');
+
+    var body = '<div class="card card-pad section-gap">' +
+      '<div class="section-title">' + (isEdit ? '설문 수정' : '새 설문 만들기') + '</div>' +
+      '<div class="field"><label class="field-label">설문 제목</label>' +
+      '<input type="text" id="d-title" value="' + escapeHtml(d.title) + '" placeholder="예: 2026년 하반기 VOY 만족도 조사"></div>' +
+
+      '<hr class="divider"><div class="eyebrow">문항 구성</div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">선택형 문항 개수</label><input type="number" id="d-choiceCount" min="0" max="20" value="' + d.choiceQuestionCount + '"></div>' +
+      '<div class="field"><label class="field-label">문항별 선택지 개수</label><input type="number" id="d-choicesPer" min="2" max="10" value="' + d.choicesPerQuestion + '"></div>' +
+      '</div>' +
+      '<div class="field"><label class="field-label">주관식(하고 싶은 말) 문항 개수</label>' +
+      '<input type="number" id="d-textCount" min="0" max="10" value="' + d.textQuestionCount + '">' +
+      '<div class="field-hint">개수를 바꾼 뒤 아래 "문항 구조 적용" 버튼을 눌러 반영하세요.</div></div>' +
+      '<button id="d-apply" class="btn btn-ghost">문항 구조 적용</button>' +
+
+      '<hr class="divider"><div class="eyebrow">문항 내용 수정</div>' +
+      (qEditHtml || '<p class="empty-note">문항이 없습니다. 위에서 개수를 지정하고 구조를 적용해주세요.</p>') +
+
+      '<hr class="divider"><div class="eyebrow">참여 기간</div>' +
+      '<div class="field-row">' +
+      '<div class="field"><label class="field-label">시작 일시</label><input type="datetime-local" id="d-start" value="' + toLocalInputValue(d.startAt) + '"></div>' +
+      '<div class="field"><label class="field-label">종료 일시</label><input type="datetime-local" id="d-end" value="' + toLocalInputValue(d.endAt) + '"></div>' +
+      '</div>' +
+      '<div class="field-hint" style="margin:-6px 0 10px;">위 일정에 따라 자동으로 시작·종료됩니다. 즉시 조정이 필요하면 아래에서 수동으로 전환하세요.</div>' +
+
+      '<hr class="divider"><div class="eyebrow">진행 상태 수동 조정</div>' +
+      '<div class="choice-list" id="d-manual-status">' +
+      manualStatusOption(d, 'auto', '자동 (일정에 따름)') +
+      manualStatusOption(d, 'forceOpen', '지금 즉시 시작') +
+      manualStatusOption(d, 'forceClosed', '지금 즉시 종료') +
+      '</div>' +
+
+      (isEdit ? '' :
+        '<hr class="divider">' +
+        '<label class="choice-option' + (d.activateNow ? ' checked' : '') + '"><input type="checkbox" id="d-activate-now"' + (d.activateNow ? ' checked' : '') + '>' +
+        '<span>저장 후 바로 이 설문을 공개(활성화)합니다 — 기존에 활성화된 설문은 자동으로 비활성화돼요.</span></label>') +
+
+      '<button id="d-save" class="btn btn-primary btn-block"' + (UI.busy ? ' disabled' : '') + '>' + (UI.busy ? '저장 중…' : (isEdit ? '수정 저장' : '설문 만들기')) + '</button>' +
+      '<button id="d-cancel" class="btn btn-ghost btn-block">취소</button>' +
+      '</div>';
+
+    adminShell(body);
+
+    document.getElementById('d-title').addEventListener('input', function (e) { DRAFT.title = e.target.value; });
+    document.getElementById('d-choiceCount').addEventListener('input', function (e) { DRAFT.choiceQuestionCount = Math.max(0, parseInt(e.target.value || '0', 10)); });
+    document.getElementById('d-choicesPer').addEventListener('input', function (e) { DRAFT.choicesPerQuestion = Math.max(2, parseInt(e.target.value || '2', 10)); });
+    document.getElementById('d-textCount').addEventListener('input', function (e) { DRAFT.textQuestionCount = Math.max(0, parseInt(e.target.value || '0', 10)); });
+    document.getElementById('d-start').addEventListener('input', function (e) { DRAFT.startAt = fromLocalInputValue(e.target.value); });
+    document.getElementById('d-end').addEventListener('input', function (e) { DRAFT.endAt = fromLocalInputValue(e.target.value); });
+    document.getElementById('d-apply').addEventListener('click', function () {
+      DRAFT.questions = regenerateQuestions(DRAFT.questions, DRAFT.choiceQuestionCount, DRAFT.choicesPerQuestion, DRAFT.textQuestionCount);
+      render();
+    });
+    document.querySelectorAll('[data-q]').forEach(function (input) {
+      input.addEventListener('input', function () {
+        var q = DRAFT.questions.find(function (x) { return x.id === input.getAttribute('data-q'); });
+        if (!q) return;
+        if (input.hasAttribute('data-choice')) q.choices[parseInt(input.getAttribute('data-choice'), 10)] = input.value;
+        else q.text = input.value;
+      });
+    });
+    var statusGroup = document.getElementById('d-manual-status');
+    statusGroup.querySelectorAll('input[name="draft-manual-status"]').forEach(function (input) {
       input.addEventListener('change', function () {
-        var group = input.closest('.choice-list');
-        group.querySelectorAll('.choice-option').forEach(function (l) { l.classList.remove('checked'); });
+        DRAFT.manualStatus = input.value;
+        statusGroup.querySelectorAll('.choice-option').forEach(function (l) { l.classList.remove('checked'); });
         input.closest('.choice-option').classList.add('checked');
       });
     });
-    form.addEventListener('submit', handleSubmit);
+    var activateNow = document.getElementById('d-activate-now');
+    if (activateNow) activateNow.addEventListener('change', function (e) { DRAFT.activateNow = e.target.checked; });
+    document.getElementById('d-cancel').addEventListener('click', function () { goto('list'); });
+    document.getElementById('d-save').addEventListener('click', handleSaveDraft);
   }
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    var s = SURVEY;
-    var form = e.target;
-    var nickname = form.querySelector('#nickname-input').value.trim();
-    if (!nickname) { UI.invalidField = 'nickname'; renderForm(); focusInvalid(); return; }
+  function handleSaveDraft() {
+    if (!DRAFT.title || !DRAFT.title.trim()) { UI.error = '설문 제목을 입력해주세요.'; render(); return; }
+    if (!DRAFT.questions || DRAFT.questions.length === 0) { UI.error = '문항이 없습니다. 문항 구조를 적용해주세요.'; render(); return; }
+    UI.busy = true; UI.error = ''; render();
+    var action = DRAFT.id ? 'save_survey' : 'create_survey';
+    api(action, DRAFT).then(function () {
+      UI.busy = false; UI.flash = DRAFT.id ? '설문을 수정했습니다.' : '설문을 만들었습니다.';
+      goto('list');
+    }).catch(handleApiError);
+  }
 
-    var answers = {};
-    var firstInvalid = null;
-    s.questions.forEach(function (q) {
+  /* ---------------- results / draw view ---------------- */
+  function loadResults(surveyId) {
+    UI.busy = true; render();
+    api('get_survey_results', { id: surveyId }).then(function (data) {
+      CURRENT = { survey: mapSurvey(data.survey), responses: data.responses || [], draw: data.draw };
+      UI.busy = false;
+      render();
+    }).catch(handleApiError);
+  }
+
+  function renderResults() {
+    if (!CURRENT) { adminShell('<div class="boot-loading">불러오는 중…</div>'); return; }
+    var s = CURRENT.survey;
+    var responses = CURRENT.responses;
+    var total = responses.length;
+    var status = getStatus(s);
+
+    var uniqueParticipants = {};
+    responses.forEach(function (r) { var k = String(r.nickname || '').trim().toLowerCase(); if (k) uniqueParticipants[k] = 1; });
+    var stats = '<div class="stat-grid" style="margin-bottom:22px;">' +
+      '<div class="stat-tile"><div class="stat-value">' + total + '</div><div class="stat-label">전체 응답 수</div></div>' +
+      '<div class="stat-tile"><div class="stat-value">' + Object.keys(uniqueParticipants).length + '</div><div class="stat-label">참여 닉네임 수(중복제외)</div></div>' +
+      '</div>';
+
+    var todayKey = dateKeyLocal(new Date().toISOString());
+    var startKey = s.startAt ? dateKeyLocal(s.startAt) : (responses.length ? dateKeyLocal(responses[0].submitted_at) : todayKey);
+    var lastRespKey = responses.length ? dateKeyLocal(responses[responses.length - 1].submitted_at) : startKey;
+    var endKey = (status === 'open' && todayKey > lastRespKey) ? todayKey : lastRespKey;
+    if (endKey < startKey) endKey = startKey;
+
+    var dayCounts = {};
+    responses.forEach(function (r) { var k = dateKeyLocal(r.submitted_at); dayCounts[k] = (dayCounts[k] || 0) + 1; });
+
+    var dailyList = [];
+    var cursor = startKey, guard = 0;
+    while (guard < 366) {
+      dailyList.push({ key: cursor, label: fmtDateShort(cursor), count: dayCounts[cursor] || 0 });
+      if (cursor === endKey) break;
+      cursor = addDaysToKey(cursor, 1);
+      guard++;
+    }
+    var maxDaily = dailyList.reduce(function (m, d) { return Math.max(m, d.count); }, 0) || 1;
+    var dailyBars = dailyList.map(function (d) {
+      var pct = Math.max(Math.round((d.count / maxDaily) * 100), d.count > 0 ? 6 : 2);
+      return '<div class="daily-bar-item">' +
+        '<span class="daily-bar-count">' + d.count + '</span>' +
+        '<div class="daily-bar-track"><div class="daily-bar-fill' + (d.count > 0 ? ' has-value' : '') + '" style="height:' + pct + '%;"></div></div>' +
+        '<span class="daily-bar-label">' + escapeHtml(d.label) + '</span>' +
+        '</div>';
+    }).join('');
+    var dailyCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
+      '<div class="section-title" style="margin-bottom:6px;">날짜별 참여 현황</div>' +
+      '<p class="muted small" style="margin:0 0 12px;">설문 시작일부터 하루 단위 응답 수입니다.</p>' +
+      '<div class="daily-chart-row">' +
+      '<div class="daily-chart-col">' +
+      (dailyList.length ? '<div class="daily-bars">' + dailyBars + '</div>' : '<p class="empty-note">데이터가 없습니다.</p>') +
+      '</div>' +
+      '<div class="daily-side-col">' +
+      '<div class="daily-side-item" style="margin-bottom:16px;">' +
+      '<div class="field-hint" style="margin-bottom:2px;">시작</div>' +
+      '<div class="mono small">' + (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '</div>' +
+      '</div>' +
+      '<div class="daily-side-item">' +
+      '<div class="field-hint" style="margin-bottom:2px;">종료</div>' +
+      '<div class="mono small">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>' +
+      '</div>';
+
+    var qBlocks = s.questions.map(function (q, idx) {
       if (q.type === 'choice') {
-        var checked = form.querySelector('input[name="q_' + q.id + '"]:checked');
-        if (!checked) { if (!firstInvalid) firstInvalid = q.id; return; }
-        answers[q.id] = Number(checked.value);
-      } else {
-        var ta = form.querySelector('textarea[name="t_' + q.id + '"]');
-        answers[q.id] = ta ? ta.value.trim() : '';
+        var counts = q.choices.map(function () { return 0; });
+        responses.forEach(function (r) { var a = r.answers[q.id]; if (typeof a === 'number' && counts[a] !== undefined) counts[a]++; });
+        var rows = q.choices.map(function (c, ci) {
+          if (!c || !String(c).trim()) return '';
+          var pct = total ? Math.round((counts[ci] / total) * 100) : 0;
+          return '<div class="bar-row"><span class="bar-label">' + escapeHtml(c) + '</span>' +
+            '<span class="bar-count">' + counts[ci] + '건 · ' + pct + '%</span>' +
+            '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
+        }).join('');
+        return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + rows + '</div>';
       }
+      var texts = responses.map(function (r) { return { v: r.answers[q.id], t: r.submitted_at, n: r.nickname }; }).filter(function (x) { return x.v; });
+      var list = texts.length
+        ? '<div class="answer-list">' + texts.map(function (x) { return '<div class="answer-item">' + escapeHtml(x.v) + '<time>' + escapeHtml(x.n) + ' · ' + fmtDateTime(x.t) + '</time></div>'; }).join('') + '</div>'
+        : '<p class="empty-note">아직 응답이 없습니다.</p>';
+      return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
+    }).join('');
+
+    var tableHead = '<tr><th>#</th><th>닉네임</th><th>제출 일시</th>' + s.questions.map(function (q, i) { return '<th>Q' + (i + 1) + '</th>'; }).join('') + '<th>관리</th></tr>';
+    var tableRows = responses.slice().reverse().map(function (r, i) {
+      var cells = s.questions.map(function (q) {
+        var a = r.answers[q.id];
+        var text = q.type === 'choice' ? (q.choices[a] || '-') : (a || '-');
+        return '<td title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</td>';
+      }).join('');
+      return '<tr><td class="mono">' + (responses.length - i) + '</td><td>' + escapeHtml(r.nickname) + '</td><td class="mono">' + fmtDateTime(r.submitted_at) + '</td>' + cells +
+        '<td><div class="survey-row-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-view-response="' + escapeHtml(r.id) + '">전체보기</button>' +
+        '<button class="btn btn-danger btn-sm" data-delete-response="' + escapeHtml(r.id) + '">삭제</button>' +
+        '</div></td></tr>';
+    }).join('');
+
+    var draw = CURRENT.draw;
+    var uniqueNicknames = {};
+    responses.forEach(function (r) { var k = String(r.nickname || '').trim().toLowerCase(); if (k) uniqueNicknames[k] = 1; });
+    var poolSize = Object.keys(uniqueNicknames).length;
+
+    var drawCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
+      '<div class="section-title" style="margin-bottom:6px;">당첨자 추첨</div>' +
+      '<p class="muted small" style="margin:0 0 14px;">중복 닉네임은 1명으로 계산합니다. 현재 추첨 대상: <strong class="mono">' + poolSize + '</strong>명.</p>' +
+      '<div class="field-row" style="align-items:end;">' +
+      '<div class="field" style="margin-bottom:0;"><label class="field-label">당첨 인원 수</label>' +
+      '<input type="number" id="draw-count" min="1" max="' + Math.max(poolSize, 1) + '" value="' + UI.drawCount + '"></div>' +
+      '<button id="draw-start" class="btn btn-primary" style="height:41px;"' + (UI.drawing || poolSize === 0 ? ' disabled' : '') + '>' +
+      (UI.drawing ? '추첨 중…' : (draw ? '다시 추첨' : '추첨 시작')) + '</button>' +
+      '</div>' +
+      '<div id="draw-stage"></div>' +
+      (draw && !UI.drawing
+        ? '<div class="field-hint" style="margin-top:10px;">마지막 추첨: ' + fmtDateTime(draw.drawn_at) + ' · 당첨 ' + draw.winners.length + '명</div>' +
+          '<div class="winner-grid">' + draw.winners.map(function (w) { return '<div class="winner-tile">' + escapeHtml(w) + '</div>'; }).join('') + '</div>'
+        : '') +
+      '</div>';
+
+    var body = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<button class="btn btn-ghost btn-sm" id="back-list">← 설문 목록으로</button>' +
+      '<button class="btn btn-ghost btn-sm" id="print-results">인쇄 (A4)</button>' +
+      '</div>' +
+      '<div class="admin-top" style="margin-bottom:6px;"><div class="admin-title-row">' +
+      '<h2 class="section-title" style="font-size:18px;">' + escapeHtml(s.title) + '</h2>' +
+      '<span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span>' +
+      (s.isActive ? '<span class="badge badge-open">공개중</span>' : '') +
+      '</div></div>' +
+      stats +
+      dailyCard +
+      '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
+      (s.questions.length ? qBlocks : '<p class="empty-note">문항이 없습니다.</p>') + '</div>' +
+      drawCard +
+      '<div class="card card-pad">' +
+      '<div class="admin-top" style="margin-bottom:14px;"><div class="section-title">원본 응답</div>' +
+      '<button class="btn btn-danger btn-sm" id="reset-open">응답 전체 초기화</button></div>' +
+      (responses.length ? '<div class="table-scroll"><table><thead>' + tableHead + '</thead><tbody>' + tableRows + '</tbody></table></div>' : '<p class="empty-note">아직 제출된 응답이 없습니다.</p>') +
+      '</div>';
+
+    var modal = UI.showResetModal
+      ? '<div class="modal-backdrop" id="reset-backdrop"><div class="card card-pad modal-card">' +
+        '<h2 class="section-title" style="margin-bottom:10px;">응답을 모두 초기화할까요?</h2>' +
+        '<p class="muted small" style="margin:0 0 18px;">이 설문의 모든 응답과 추첨 결과가 삭제되며 되돌릴 수 없습니다.</p>' +
+        '<div style="display:flex;gap:10px;"><button class="btn btn-ghost" id="reset-cancel" style="flex:1;">취소</button>' +
+        '<button class="btn btn-danger" id="reset-confirm" style="flex:1;border-color:var(--danger);">초기화</button></div>' +
+        '</div></div>'
+      : '';
+
+    var viewResponse = UI.viewResponseId ? responses.find(function (r) { return r.id === UI.viewResponseId; }) : null;
+    var viewModal = viewResponse
+      ? '<div class="modal-backdrop" id="view-response-backdrop"><div class="card card-pad modal-card response-detail-card">' +
+        '<div class="admin-top" style="margin-bottom:4px;"><div>' +
+        '<div class="eyebrow" style="margin-bottom:4px;">RESPONSE</div>' +
+        '<h2 class="section-title" style="font-size:17px;">' + escapeHtml(viewResponse.nickname) + '</h2>' +
+        '</div><button class="btn btn-ghost btn-sm" id="view-response-close">닫기</button></div>' +
+        '<p class="muted small" style="margin:0 0 14px;">' + fmtDateTime(viewResponse.submitted_at) + ' 제출</p>' +
+        '<div class="response-detail-body">' +
+        s.questions.map(function (q, idx) {
+          var a = viewResponse.answers[q.id];
+          var answerText = q.type === 'choice' ? (q.choices[a] || '(응답 없음)') : ((a && String(a).trim()) ? a : '(응답 없음)');
+          return '<div class="q-result-card"><div class="section-title" style="margin-bottom:6px;font-size:14px;">' +
+            '<span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' +
+            '<p class="response-answer-text">' + escapeHtml(answerText) + '</p></div>';
+        }).join('') +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:6px;">' +
+        '<button class="btn btn-danger btn-block" data-delete-response="' + escapeHtml(viewResponse.id) + '">이 응답 삭제</button>' +
+        '</div>' +
+        '</div></div>'
+      : '';
+
+    adminShell(body + modal + viewModal);
+
+    document.getElementById('back-list').addEventListener('click', function () { goto('list'); });
+    document.getElementById('print-results').addEventListener('click', function () { window.print(); });
+    document.querySelectorAll('[data-delete-response]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        UI.busy = true; render();
+        api('delete_response', { id: b.getAttribute('data-delete-response') })
+          .then(function () { UI.flash = '응답 1건이 삭제되었습니다.'; loadResults(s.id); })
+          .catch(handleApiError);
+      });
     });
-    if (firstInvalid) { UI.invalidField = firstInvalid; renderForm(); focusInvalid(); return; }
-
-    UI.invalidField = '';
-    UI.submitting = true;
-    UI.submitError = '';
-    renderForm();
-
-    sb.from('responses').insert({ survey_id: s.id, nickname: nickname, answers: answers }).then(function (res) {
-      if (res.error) {
-        UI.submitting = false;
-        UI.submitError = '제출 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
-        renderForm();
-        return;
-      }
-      try { sessionStorage.setItem('voy_submitted_' + s.id, '1'); } catch (e) {}
-      renderDone();
+    document.querySelectorAll('[data-view-response]').forEach(function (b) {
+      b.addEventListener('click', function () { UI.viewResponseId = b.getAttribute('data-view-response'); render(); });
     });
+    var viewBackdrop = document.getElementById('view-response-backdrop');
+    if (viewBackdrop) {
+      document.getElementById('view-response-close').addEventListener('click', function () { UI.viewResponseId = null; render(); });
+    }
+    document.getElementById('reset-open').addEventListener('click', function () { UI.showResetModal = true; render(); });
+    var backdrop = document.getElementById('reset-backdrop');
+    if (backdrop) {
+      document.getElementById('reset-cancel').addEventListener('click', function () { UI.showResetModal = false; render(); });
+      document.getElementById('reset-confirm').addEventListener('click', function () {
+        UI.showResetModal = false; UI.busy = true; render();
+        api('reset_responses', { survey_id: s.id })
+          .then(function () { UI.flash = '응답이 초기화되었습니다.'; loadResults(s.id); })
+          .catch(handleApiError);
+      });
+    }
+    document.getElementById('draw-count').addEventListener('input', function (e) { UI.drawCount = Math.max(1, parseInt(e.target.value || '1', 10)); });
+    document.getElementById('draw-start').addEventListener('click', function () { startDraw(s.id, responses); });
   }
 
-  function focusInvalid() {
-    var el = document.querySelector('[data-qid="' + UI.invalidField + '"]');
-    if (el) { el.scrollIntoView({ block: 'center' }); var f = el.querySelector('input,textarea'); if (f) f.focus(); }
+  function startDraw(surveyId, responses) {
+    var pool = [];
+    var seen = {};
+    responses.forEach(function (r) {
+      var key = String(r.nickname || '').trim();
+      var lower = key.toLowerCase();
+      if (key && !seen[lower]) { seen[lower] = 1; pool.push(key); }
+    });
+    if (!pool.length) return;
+
+    UI.drawing = true; render();
+    var stage = document.getElementById('draw-stage');
+    var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    api('draw_winners', { survey_id: surveyId, count: UI.drawCount }).then(function (data) {
+      var winners = (data.draw && data.draw.winners) || [];
+      if (reduced || !stage) { finishDraw(surveyId); return; }
+      var ticks = 0;
+      var maxTicks = 16;
+      var timer = setInterval(function () {
+        ticks++;
+        var rand = pool[Math.floor(Math.random() * pool.length)];
+        stage.innerHTML = '<div class="draw-stage"><div class="eyebrow">DRAWING</div><div class="draw-reel">' + escapeHtml(rand) + '</div></div>';
+        if (ticks >= maxTicks) {
+          clearInterval(timer);
+          stage.innerHTML = '<div class="draw-stage"><div class="eyebrow" style="color:var(--accent);">결과</div><div class="draw-reel">' + escapeHtml(winners[0] || '-') + '</div></div>';
+          setTimeout(function () { finishDraw(surveyId); }, 600);
+        }
+      }, 90);
+    }).catch(function (err) { UI.drawing = false; handleApiError(err); });
   }
 
-  function renderDone() {
-    shell(centeredCard(
-      '<div class="eyebrow" style="margin-bottom:10px;color:var(--accent);">DONE</div>' +
-      '<h1 class="page-title" style="margin-bottom:10px;">제출이 완료되었습니다</h1>' +
-      '<p class="muted">소중한 의견 감사합니다.</p>'
-    ));
+  function finishDraw(surveyId) {
+    UI.drawing = false;
+    loadResults(surveyId);
   }
 
-  function renderStatusScreen(status, survey) {
-    if (status === 'draft') {
-      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">설문이 아직 준비 중입니다</h1><p class="muted">잠시 후 다시 확인해주세요.</p>'));
+  /* ---------------- errors / render dispatch ---------------- */
+  function handleApiError(err) {
+    UI.busy = false;
+    if (err && err.code === 'invalid_passcode') {
+      PASSCODE = null;
+      try { sessionStorage.removeItem('voy_admin_passcode'); } catch (e) {}
+      VIEW = 'gate';
+      UI.passcodeError = '세션이 만료되었습니다. 다시 로그인해주세요.';
+      render();
       return;
     }
-    if (status === 'before') {
-      shell(centeredCard(
-        '<span class="badge badge-before"><span class="badge-dot"></span>' + STATUS_LABEL.before + '</span>' +
-        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
-        '<p class="muted">' + (survey.start_at ? (fmtDateTime(survey.start_at) + '부터 참여하실 수 있습니다.') : '곧 시작됩니다.') + '</p>'
-      ));
-      return;
-    }
-    if (status === 'closed') {
-      shell(centeredCard(
-        '<span class="badge badge-closed"><span class="badge-dot"></span>' + STATUS_LABEL.closed + '</span>' +
-        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
-        '<p class="muted">설문이 종료되었습니다. 참여해주셔서 감사합니다.</p>'
-      ));
-      return;
-    }
+    UI.error = '요청 처리 중 문제가 발생했습니다. 다시 시도해주세요.';
+    render();
   }
 
-  async function boot() {
-    var app = document.getElementById('app');
-    var res = await sb.from('surveys').select('*').eq('is_active', true).maybeSingle();
-    if (res.error) {
-      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">불러오지 못했습니다</h1><p class="muted">잠시 후 새로고침해주세요.</p>'));
-      return;
-    }
-    var survey = res.data;
-    var status = getStatus(survey);
-    if (status !== 'open') { renderStatusScreen(status, survey); return; }
+  function render() {
+    if (!PASSCODE || VIEW === 'gate') { renderGate(); return; }
+    if (VIEW === 'create') { renderCreate(); return; }
+    if (VIEW === 'results') { renderResults(); return; }
+    renderList();
+  }
 
-    SURVEY = survey;
-    var already = false;
-    try { already = sessionStorage.getItem('voy_submitted_' + survey.id) === '1'; } catch (e) {}
-    if (already) { renderDone(); return; }
-    renderForm();
+  function boot() {
+    if (PASSCODE) { VIEW = 'list'; loadList(); }
+    else render();
   }
 
   boot();
