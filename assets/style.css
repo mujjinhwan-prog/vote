@@ -175,3 +175,18 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
 .response-detail-body{overflow-y:auto;margin:4px -4px 14px;padding:0 4px;}
 .response-answer-text{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 @media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important;}}
+
+/* print */
+@page{size:A4;margin:14mm;}
+@media print{
+  html,body{background:#fff;}
+  :root,:root[data-theme="dark"]{--bg:#fff;--surface:#fff;--surface-2:#F2F5F3;--ink:#1A1A1A;--ink-muted:#555;--border:#CCC;}
+  .theme-toggle,.modal-backdrop,.tabs,.foot-link,#back-list,.survey-row-actions,.btn,input,#draw-stage{display:none !important;}
+  .admin-shell{max-width:100%;padding:0;}
+  .card{border:1px solid #ccc;box-shadow:none;}
+  .answer-list{max-height:none;overflow:visible;}
+  .table-scroll{overflow:visible;border:none;}
+  table{width:100%;font-size:11px;}
+  .q-result-card,.stat-tile{break-inside:avoid;}
+  .page-title,.section-title,h1,h2{break-after:avoid;}
+}

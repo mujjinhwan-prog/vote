@@ -546,7 +546,10 @@
         : '') +
       '</div>';
 
-    var body = '<button class="btn btn-ghost btn-sm" id="back-list" style="margin-bottom:16px;">← 설문 목록으로</button>' +
+    var body = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
+      '<button class="btn btn-ghost btn-sm" id="back-list">← 설문 목록으로</button>' +
+      '<button class="btn btn-ghost btn-sm" id="print-results">인쇄 (A4)</button>' +
+      '</div>' +
       '<div class="admin-top" style="margin-bottom:6px;"><div class="admin-title-row">' +
       '<h2 class="section-title" style="font-size:18px;">' + escapeHtml(s.title) + '</h2>' +
       '<span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span>' +
@@ -597,6 +600,7 @@
     adminShell(body + modal + viewModal);
 
     document.getElementById('back-list').addEventListener('click', function () { goto('list'); });
+    document.getElementById('print-results').addEventListener('click', function () { window.print(); });
     document.querySelectorAll('[data-delete-response]').forEach(function (b) {
       b.addEventListener('click', function () {
         UI.busy = true; render();
