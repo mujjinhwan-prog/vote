@@ -154,7 +154,7 @@
   var SURVEYS = [];
   var DRAFT = null;
   var CURRENT = null;         // { survey, responses, draw }
-  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '' };
+  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '', viewResponseId: null };
 
   try { PASSCODE = sessionStorage.getItem('voy_admin_passcode') || null; } catch (e) {}
 
@@ -519,7 +519,10 @@
         return '<td title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</td>';
       }).join('');
       return '<tr><td class="mono">' + (responses.length - i) + '</td><td>' + escapeHtml(r.nickname) + '</td><td class="mono">' + fmtDateTime(r.submitted_at) + '</td>' + cells +
-        '<td><button class="btn btn-danger btn-sm" data-delete-response="' + escapeHtml(r.id) + '">삭제</button></td></tr>';
+        '<td><div class="survey-row-actions">' +
+        '<button class="btn btn-ghost btn-sm" data-view-response="' + escapeHtml(r.id) + '">전체보기</button>' +
+        '<button class="btn btn-danger btn-sm" data-delete-response="' + escapeHtml(r.id) + '">삭제</button>' +
+        '</div></td></tr>';
     }).join('');
 
     var draw = CURRENT.draw;
@@ -568,7 +571,30 @@
         '</div></div>'
       : '';
 
-    adminShell(body + modal);
+    var viewResponse = UI.viewResponseId ? responses.find(function (r) { return r.id === UI.viewResponseId; }) : null;
+    var viewModal = viewResponse
+      ? '<div class="modal-backdrop" id="view-response-backdrop"><div class="card card-pad modal-card response-detail-card">' +
+        '<div class="admin-top" style="margin-bottom:4px;"><div>' +
+        '<div class="eyebrow" style="margin-bottom:4px;">RESPONSE</div>' +
+        '<h2 class="section-title" style="font-size:17px;">' + escapeHtml(viewResponse.nickname) + '</h2>' +
+        '</div><button class="btn btn-ghost btn-sm" id="view-response-close">닫기</button></div>' +
+        '<p class="muted small" style="margin:0 0 14px;">' + fmtDateTime(viewResponse.submitted_at) + ' 제출</p>' +
+        '<div class="response-detail-body">' +
+        s.questions.map(function (q, idx) {
+          var a = viewResponse.answers[q.id];
+          var answerText = q.type === 'choice' ? (q.choices[a] || '(응답 없음)') : ((a && String(a).trim()) ? a : '(응답 없음)');
+          return '<div class="q-result-card"><div class="section-title" style="margin-bottom:6px;font-size:14px;">' +
+            '<span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' +
+            '<p class="response-answer-text">' + escapeHtml(answerText) + '</p></div>';
+        }).join('') +
+        '</div>' +
+        '<div style="display:flex;gap:10px;margin-top:6px;">' +
+        '<button class="btn btn-danger btn-block" data-delete-response="' + escapeHtml(viewResponse.id) + '">이 응답 삭제</button>' +
+        '</div>' +
+        '</div></div>'
+      : '';
+
+    adminShell(body + modal + viewModal);
 
     document.getElementById('back-list').addEventListener('click', function () { goto('list'); });
     document.querySelectorAll('[data-delete-response]').forEach(function (b) {
@@ -579,6 +605,13 @@
           .catch(handleApiError);
       });
     });
+    document.querySelectorAll('[data-view-response]').forEach(function (b) {
+      b.addEventListener('click', function () { UI.viewResponseId = b.getAttribute('data-view-response'); render(); });
+    });
+    var viewBackdrop = document.getElementById('view-response-backdrop');
+    if (viewBackdrop) {
+      document.getElementById('view-response-close').addEventListener('click', function () { UI.viewResponseId = null; render(); });
+    }
     document.getElementById('reset-open').addEventListener('click', function () { UI.showResetModal = true; render(); });
     var backdrop = document.getElementById('reset-backdrop');
     if (backdrop) {

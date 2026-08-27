@@ -171,4 +171,7 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
 /* modal */
 .modal-backdrop{position:fixed;inset:0;background:rgba(15,20,19,.5);display:flex;align-items:center;justify-content:center;padding:20px;z-index:50;}
 .modal-card{max-width:380px;width:100%;}
+.response-detail-card{max-width:560px;max-height:85vh;display:flex;flex-direction:column;}
+.response-detail-body{overflow-y:auto;margin:4px -4px 14px;padding:0 4px;}
+.response-answer-text{margin:0;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 @media (prefers-reduced-motion: reduce){*{transition:none !important;animation:none !important;}}
