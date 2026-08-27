@@ -75,19 +75,20 @@
     shell(
       '<div class="eyebrow" style="margin-bottom:10px;">SURVEY</div>' +
       '<h1 class="page-title" style="margin-bottom:6px;">' + escapeHtml(s.title) + '</h1>' +
+      (s.subtitle ? '<p class="muted small" style="margin:0 0 8px;">' + escapeHtml(s.subtitle) + '</p>' : '') +
       (s.end_at ? '<p class="muted small" style="margin:0 0 20px;">' + fmtDateTime(s.end_at) + '까지 참여 가능합니다.</p>' : '<div style="height:20px;"></div>') +
       (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
       '<form id="survey-form" class="card card-pad">' +
       '<div class="question-block' + (nicknameInvalid ? ' invalid' : '') + '" data-qid="nickname">' +
       '<label class="field-label" for="nickname-input">당신의 VOY 닉네임은?<span class="required-mark">*</span></label>' +
-      '<input type="text" id="nickname-input" name="nickname" placeholder="ex)다리가긴웰시코기45" maxlength="30" autocomplete="off">' +
+      '<input type="text" id="nickname-input" name="nickname" placeholder="ex) 롱다리웰시코기45" maxlength="30" autocomplete="off">' +
       (nicknameInvalid ? '<div class="error-text">닉네임을 입력해주세요.</div>' : '') +
       '</div>' +
       qHtml +
       '<div style="margin-top:22px;"><button type="submit" class="btn btn-primary btn-block"' + (UI.submitting ? ' disabled' : '') + '>' +
       (UI.submitting ? '제출 중…' : '제출하기') + '</button></div>' +
       '</form>' +
-      '<div class="foot-link"><a href="/admin">관리자이신가요? 관리자 페이지</a></div>'
+      '<p class="muted small" style="text-align:center;margin-top:22px;line-height:1.7;">영업현장의 참고서 VOY, 여러분의 관심과 참여로 만들어 집니다.<br><br>설문조사 감사합니다.</p>'
     );
 
     var form = document.getElementById('survey-form');
