@@ -3,6 +3,6 @@
 //   url     = Project URL
 //   anonKey = anon public 키 (service_role 키는 절대 여기 넣지 마세요)
 window.SUPABASE_CONFIG = {
-  url: 'https://YOUR-PROJECT-REF.supabase.co',
-  anonKey: 'YOUR-ANON-PUBLIC-KEY',
+  url: 'https://nmpkutririuijxdrfdux.supabase.co',
+  anonKey: 'sb_publishable_oB3WFPJG5-ZlOdYW4pFDog_6ggwL4rJ',
 };
