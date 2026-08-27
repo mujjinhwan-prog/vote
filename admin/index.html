@@ -412,8 +412,11 @@
     var total = responses.length;
     var status = getStatus(s);
 
+    var uniqueParticipants = {};
+    responses.forEach(function (r) { var k = String(r.nickname || '').trim().toLowerCase(); if (k) uniqueParticipants[k] = 1; });
     var stats = '<div class="stat-grid" style="margin-bottom:22px;">' +
       '<div class="stat-tile"><div class="stat-value">' + total + '</div><div class="stat-label">전체 응답 수</div></div>' +
+      '<div class="stat-tile"><div class="stat-value">' + Object.keys(uniqueParticipants).length + '</div><div class="stat-label">참여 닉네임 수(중복제외)</div></div>' +
       '<div class="stat-tile"><div class="stat-value" style="font-size:15px;">' + (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '</div><div class="stat-label">시작</div></div>' +
       '<div class="stat-tile"><div class="stat-value" style="font-size:15px;">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div><div class="stat-label">종료</div></div>' +
       '</div>';

@@ -31,19 +31,19 @@ function shuffle<T>(arr: T[]): T[] {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS_HEADERS });
-  if (req.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (req.method !== "POST") return json({ error: "method_not_allowed" });
 
   let body: any;
   try {
     body = await req.json();
   } catch {
-    return json({ error: "bad_request" }, 400);
+    return json({ error: "bad_request" });
   }
 
   const { passcode, action, payload } = body || {};
   const ADMIN_PASSCODE = Deno.env.get("ADMIN_PASSCODE");
-  if (!ADMIN_PASSCODE) return json({ error: "server_not_configured" }, 500);
-  if (!passcode || passcode !== ADMIN_PASSCODE) return json({ error: "invalid_passcode" }, 401);
+  if (!ADMIN_PASSCODE) return json({ error: "server_not_configured" });
+  if (!passcode || passcode !== ADMIN_PASSCODE) return json({ error: "invalid_passcode" });
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -57,12 +57,12 @@ Deno.serve(async (req) => {
           .from("surveys")
           .select("*")
           .order("created_at", { ascending: false });
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
 
         const { data: counts, error: cErr } = await supabase
           .from("responses")
           .select("survey_id");
-        if (cErr) return json({ error: "db_error", detail: cErr.message }, 500);
+        if (cErr) return json({ error: "db_error", detail: cErr.message });
         const countMap: Record<string, number> = {};
         (counts || []).forEach((r: any) => { countMap[r.survey_id] = (countMap[r.survey_id] || 0) + 1; });
 
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
           })
           .select()
           .single();
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
 
         if (c.activateNow) {
           await supabase.from("surveys").update({ is_active: false }).neq("id", data.id);
@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
 
       case "save_survey": {
         const c = payload || {};
-        if (!c.id) return json({ error: "missing_id" }, 400);
+        if (!c.id) return json({ error: "missing_id" });
         const { data, error } = await supabase
           .from("surveys")
           .update({
@@ -116,57 +116,57 @@ Deno.serve(async (req) => {
           .eq("id", c.id)
           .select()
           .single();
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         return json({ survey: data });
       }
 
       case "activate_survey": {
         const id = payload && payload.id;
-        if (!id) return json({ error: "missing_id" }, 400);
+        if (!id) return json({ error: "missing_id" });
         await supabase.from("surveys").update({ is_active: false }).neq("id", id);
         const { data, error } = await supabase
           .from("surveys").update({ is_active: true }).eq("id", id).select().single();
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         return json({ survey: data });
       }
 
       case "deactivate_survey": {
         const id = payload && payload.id;
-        if (!id) return json({ error: "missing_id" }, 400);
+        if (!id) return json({ error: "missing_id" });
         const { data, error } = await supabase
           .from("surveys").update({ is_active: false }).eq("id", id).select().single();
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         return json({ survey: data });
       }
 
       case "get_survey_results": {
         const id = payload && payload.id;
-        if (!id) return json({ error: "missing_id" }, 400);
+        if (!id) return json({ error: "missing_id" });
         const [{ data: survey, error: sErr }, { data: responses, error: rErr }, { data: draw, error: dErr }] =
           await Promise.all([
             supabase.from("surveys").select("*").eq("id", id).single(),
             supabase.from("responses").select("*").eq("survey_id", id).order("submitted_at", { ascending: true }),
             supabase.from("draws").select("*").eq("survey_id", id).maybeSingle(),
           ]);
-        if (sErr) return json({ error: "db_error", detail: sErr.message }, 500);
-        if (rErr) return json({ error: "db_error", detail: rErr.message }, 500);
-        if (dErr) return json({ error: "db_error", detail: dErr.message }, 500);
+        if (sErr) return json({ error: "db_error", detail: sErr.message });
+        if (rErr) return json({ error: "db_error", detail: rErr.message });
+        if (dErr) return json({ error: "db_error", detail: dErr.message });
         return json({ survey, responses, draw: draw || null });
       }
 
       case "delete_response": {
         const id = payload && payload.id;
-        if (!id) return json({ error: "missing_id" }, 400);
+        if (!id) return json({ error: "missing_id" });
         const { error } = await supabase.from("responses").delete().eq("id", id);
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         return json({ ok: true });
       }
 
       case "reset_responses": {
         const surveyId = payload && payload.survey_id;
-        if (!surveyId) return json({ error: "missing_survey_id" }, 400);
+        if (!surveyId) return json({ error: "missing_survey_id" });
         const { error } = await supabase.from("responses").delete().eq("survey_id", surveyId);
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         await supabase.from("draws").delete().eq("survey_id", surveyId);
         return json({ ok: true });
       }
@@ -174,11 +174,11 @@ Deno.serve(async (req) => {
       case "draw_winners": {
         const surveyId = payload && payload.survey_id;
         const count = Math.max(1, parseInt((payload && payload.count) || "1", 10));
-        if (!surveyId) return json({ error: "missing_survey_id" }, 400);
+        if (!surveyId) return json({ error: "missing_survey_id" });
 
         const { data: responses, error: rErr } = await supabase
           .from("responses").select("nickname").eq("survey_id", surveyId);
-        if (rErr) return json({ error: "db_error", detail: rErr.message }, 500);
+        if (rErr) return json({ error: "db_error", detail: rErr.message });
 
         const seen = new Set<string>();
         const pool: string[] = [];
@@ -198,14 +198,14 @@ Deno.serve(async (req) => {
           )
           .select()
           .single();
-        if (error) return json({ error: "db_error", detail: error.message }, 500);
+        if (error) return json({ error: "db_error", detail: error.message });
         return json({ draw: data, pool_size: pool.length });
       }
 
       default:
-        return json({ error: "unknown_action" }, 400);
+        return json({ error: "unknown_action" });
     }
   } catch (e) {
-    return json({ error: "server_error", detail: String(e) }, 500);
+    return json({ error: "server_error", detail: String(e) });
   }
 });

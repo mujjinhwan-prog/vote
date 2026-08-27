@@ -79,8 +79,8 @@
       (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
       '<form id="survey-form" class="card card-pad">' +
       '<div class="question-block' + (nicknameInvalid ? ' invalid' : '') + '" data-qid="nickname">' +
-      '<label class="field-label" for="nickname-input">닉네임 (VOY)<span class="required-mark">*</span></label>' +
-      '<input type="text" id="nickname-input" name="nickname" placeholder="예: voy_철수" maxlength="30" autocomplete="off">' +
+      '<label class="field-label" for="nickname-input">당신의 VOY 닉네임은?<span class="required-mark">*</span></label>' +
+      '<input type="text" id="nickname-input" name="nickname" placeholder="ex)다리가긴웰시코기45" maxlength="30" autocomplete="off">' +
       (nicknameInvalid ? '<div class="error-text">닉네임을 입력해주세요.</div>' : '') +
       '</div>' +
       qHtml +
