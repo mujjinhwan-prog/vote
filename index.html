@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice of YUHAN</title>
+<link rel="stylesheet" href="/assets/style.css">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<div id="app"><div class="survey-shell"><div class="boot-loading">불러오는 중…</div></div></div>
+
+<script src="/config.js"></script>
+<script src="/assets/supabase-js.min.js"></script>
+<script>
+(function () {
+  var sb = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso; }
+  }
+  function getStatus(survey) {
+    if (!survey || !survey.questions || survey.questions.length === 0 || !survey.title) return 'draft';
+    if (survey.manual_status === 'forceOpen') return 'open';
+    if (survey.manual_status === 'forceClosed') return 'closed';
+    var now = Date.now();
+    var start = survey.start_at ? new Date(survey.start_at).getTime() : null;
+    var end = survey.end_at ? new Date(survey.end_at).getTime() : null;
+    if (start && now < start) return 'before';
+    if (end && now > end) return 'closed';
+    return 'open';
+  }
+  var STATUS_LABEL = { draft: '준비 중', before: '시작 전', open: '진행 중', closed: '종료됨' };
+
+  var brandHtml = '<div class="brand-row"><img class="brand-logo" src="/assets/logo.webp" alt="Voice of YUHAN"></div>';
+
+  function shell(inner) {
+    document.getElementById('app').innerHTML = '<div class="survey-shell">' + brandHtml + inner + '</div>';
+  }
+  function centeredCard(inner) {
+    return '<div class="card card-pad" style="text-align:center;">' + inner + '</div>';
+  }
+
+  var UI = { invalidField: '', submitting: false, submitError: '' };
+  var SURVEY = null;
+
+  function renderForm() {
+    var s = SURVEY;
+    var nicknameInvalid = UI.invalidField === 'nickname';
+    var qHtml = s.questions.map(function (q, idx) {
+      var invalid = UI.invalidField === q.id;
+      var body;
+      if (q.type === 'choice') {
+        body = '<div class="choice-list">' + q.choices.map(function (c, ci) {
+          return '<label class="choice-option"><input type="radio" name="q_' + q.id + '" value="' + ci + '">' +
+            '<span>' + escapeHtml(c) + '</span></label>';
+        }).join('') + '</div>';
+      } else {
+        body = '<textarea name="t_' + q.id + '" placeholder="자유롭게 의견을 남겨주세요"></textarea>';
+      }
+      return '<div class="question-block' + (invalid ? ' invalid' : '') + '" data-qid="' + q.id + '">' +
+        '<div class="section-title"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' +
+        escapeHtml(q.text) + (q.type === 'choice' ? '<span class="required-mark">*</span>' : '') + '</div>' +
+        body + (invalid ? '<div class="error-text">이 문항에 응답해주세요.</div>' : '') + '</div>';
+    }).join('');
+
+    shell(
+      '<div class="eyebrow" style="margin-bottom:10px;">SURVEY</div>' +
+      '<h1 class="page-title" style="margin-bottom:6px;">' + escapeHtml(s.title) + '</h1>' +
+      (s.end_at ? '<p class="muted small" style="margin:0 0 20px;">' + fmtDateTime(s.end_at) + '까지 참여 가능합니다.</p>' : '<div style="height:20px;"></div>') +
+      (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
+      '<form id="survey-form" class="card card-pad">' +
+      '<div class="question-block' + (nicknameInvalid ? ' invalid' : '') + '" data-qid="nickname">' +
+      '<label class="field-label" for="nickname-input">닉네임 (VOY)<span class="required-mark">*</span></label>' +
+      '<input type="text" id="nickname-input" name="nickname" placeholder="예: voy_철수" maxlength="30" autocomplete="off">' +
+      (nicknameInvalid ? '<div class="error-text">닉네임을 입력해주세요.</div>' : '') +
+      '</div>' +
+      qHtml +
+      '<div style="margin-top:22px;"><button type="submit" class="btn btn-primary btn-block"' + (UI.submitting ? ' disabled' : '') + '>' +
+      (UI.submitting ? '제출 중…' : '제출하기') + '</button></div>' +
+      '</form>' +
+      '<div class="foot-link"><a href="/admin">관리자이신가요? 관리자 페이지</a></div>'
+    );
+
+    var form = document.getElementById('survey-form');
+    form.querySelectorAll('.choice-option input').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var group = input.closest('.choice-list');
+        group.querySelectorAll('.choice-option').forEach(function (l) { l.classList.remove('checked'); });
+        input.closest('.choice-option').classList.add('checked');
+      });
+    });
+    form.addEventListener('submit', handleSubmit);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    var s = SURVEY;
+    var form = e.target;
+    var nickname = form.querySelector('#nickname-input').value.trim();
+    if (!nickname) { UI.invalidField = 'nickname'; renderForm(); focusInvalid(); return; }
+
+    var answers = {};
+    var firstInvalid = null;
+    s.questions.forEach(function (q) {
+      if (q.type === 'choice') {
+        var checked = form.querySelector('input[name="q_' + q.id + '"]:checked');
+        if (!checked) { if (!firstInvalid) firstInvalid = q.id; return; }
+        answers[q.id] = Number(checked.value);
+      } else {
+        var ta = form.querySelector('textarea[name="t_' + q.id + '"]');
+        answers[q.id] = ta ? ta.value.trim() : '';
+      }
+    });
+    if (firstInvalid) { UI.invalidField = firstInvalid; renderForm(); focusInvalid(); return; }
+
+    UI.invalidField = '';
+    UI.submitting = true;
+    UI.submitError = '';
+    renderForm();
+
+    sb.from('responses').insert({ survey_id: s.id, nickname: nickname, answers: answers }).then(function (res) {
+      if (res.error) {
+        UI.submitting = false;
+        UI.submitError = '제출 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        renderForm();
+        return;
+      }
+      try { sessionStorage.setItem('voy_submitted_' + s.id, '1'); } catch (e) {}
+      renderDone();
+    });
+  }
+
+  function focusInvalid() {
+    var el = document.querySelector('[data-qid="' + UI.invalidField + '"]');
+    if (el) { el.scrollIntoView({ block: 'center' }); var f = el.querySelector('input,textarea'); if (f) f.focus(); }
+  }
+
+  function renderDone() {
+    shell(centeredCard(
+      '<div class="eyebrow" style="margin-bottom:10px;color:var(--accent);">DONE</div>' +
+      '<h1 class="page-title" style="margin-bottom:10px;">제출이 완료되었습니다</h1>' +
+      '<p class="muted">소중한 의견 감사합니다.</p>'
+    ));
+  }
+
+  function renderStatusScreen(status, survey) {
+    if (status === 'draft') {
+      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">설문이 아직 준비 중입니다</h1><p class="muted">잠시 후 다시 확인해주세요.</p>'));
+      return;
+    }
+    if (status === 'before') {
+      shell(centeredCard(
+        '<span class="badge badge-before"><span class="badge-dot"></span>' + STATUS_LABEL.before + '</span>' +
+        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
+        '<p class="muted">' + (survey.start_at ? (fmtDateTime(survey.start_at) + '부터 참여하실 수 있습니다.') : '곧 시작됩니다.') + '</p>'
+      ));
+      return;
+    }
+    if (status === 'closed') {
+      shell(centeredCard(
+        '<span class="badge badge-closed"><span class="badge-dot"></span>' + STATUS_LABEL.closed + '</span>' +
+        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
+        '<p class="muted">설문이 종료되었습니다. 참여해주셔서 감사합니다.</p>'
+      ));
+      return;
+    }
+  }
+
+  async function boot() {
+    var app = document.getElementById('app');
+    var res = await sb.from('surveys').select('*').eq('is_active', true).maybeSingle();
+    if (res.error) {
+      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">불러오지 못했습니다</h1><p class="muted">잠시 후 새로고침해주세요.</p>'));
+      return;
+    }
+    var survey = res.data;
+    var status = getStatus(survey);
+    if (status !== 'open') { renderStatusScreen(status, survey); return; }
+
+    SURVEY = survey;
+    var already = false;
+    try { already = sessionStorage.getItem('voy_submitted_' + survey.id) === '1'; } catch (e) {}
+    if (already) { renderDone(); return; }
+    renderForm();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>
