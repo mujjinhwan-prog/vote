@@ -184,6 +184,11 @@ Deno.serve(async (req) => {
         const count = Math.max(1, parseInt((payload && payload.count) || "1", 10));
         if (!surveyId) return json({ error: "missing_survey_id" });
 
+        const candidates: string[] | null = Array.isArray(payload && payload.candidates)
+          ? payload.candidates.map((c: any) => String(c).trim().toLowerCase())
+          : null;
+        const candidateSet = candidates ? new Set(candidates) : null;
+
         const { data: responses, error: rErr } = await supabase
           .from("responses").select("nickname").eq("survey_id", surveyId);
         if (rErr) return json({ error: "db_error", detail: rErr.message });
@@ -193,7 +198,9 @@ Deno.serve(async (req) => {
         (responses || []).forEach((r: any) => {
           const key = String(r.nickname || "").trim();
           const lower = key.toLowerCase();
-          if (key && !seen.has(lower)) { seen.add(lower); pool.push(key); }
+          if (!key || seen.has(lower)) return;
+          if (candidateSet && !candidateSet.has(lower)) return;
+          seen.add(lower); pool.push(key);
         });
 
         const winners = shuffle(pool).slice(0, Math.min(count, pool.length));
