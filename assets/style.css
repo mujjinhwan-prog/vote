@@ -123,6 +123,8 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{
 .tab-btn{padding:8px 16px;border-radius:5px;border:0;background:transparent;color:var(--ink-muted);font-weight:600;font-size:13px;cursor:pointer;}
 .tab-btn.active{background:var(--surface);color:var(--ink);box-shadow:none;border:1px solid var(--ink);}
 
+.print-only{display:none;}
+
 /* stat tiles */
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
 @media (max-width:640px){.stat-grid{grid-template-columns:1fr 1fr;}}
@@ -185,9 +187,14 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .theme-toggle,.modal-backdrop,.tabs,.foot-link,#back-list,.survey-row-actions,.btn,input,#draw-stage{display:none !important;}
   .admin-shell{max-width:100%;padding:0;}
   .card{border:1px solid #ccc;box-shadow:none;}
+  .no-print{display:none !important;}
+  .print-only{display:block !important;}
   .answer-list{max-height:none;overflow:visible;}
   .table-scroll{overflow:visible;border:none;}
   table{width:100%;font-size:11px;}
+  .print-answer-table{border-collapse:collapse;margin-top:6px;}
+  .print-answer-table th,.print-answer-table td{white-space:normal !important;overflow:visible !important;max-width:none !important;word-break:break-word;vertical-align:top;border:1px solid #ccc;padding:6px 8px;}
+  .print-answer-table thead th{background:#F2F5F3;}
   .q-result-card,.stat-tile{break-inside:avoid;}
   .page-title,.section-title,h1,h2{break-after:avoid;}
   .daily-bars{overflow-x:visible !important;flex-wrap:wrap;row-gap:14px;height:auto !important;}
