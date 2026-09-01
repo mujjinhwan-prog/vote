@@ -186,7 +186,8 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   :root,:root[data-theme="dark"]{--bg:#fff;--surface:#fff;--surface-2:#F2F5F3;--ink:#1A1A1A;--ink-muted:#555;--border:#CCC;}
   *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;color-adjust:exact !important;}
   .theme-toggle,.modal-backdrop,.tabs,.foot-link,#back-list,.survey-row-actions,.btn,input,#draw-stage{display:none !important;}
-  .admin-shell{max-width:100%;padding:0;}
+  .admin-shell{max-width:100%;padding:0;padding-bottom:16mm;}
+  .print-footer{position:fixed;bottom:6mm;left:0;right:0;margin:0 !important;font-size:10px;color:#555;text-align:center;}
   .card{border:1px solid #ccc;box-shadow:none;}
   .no-print{display:none !important;}
   .print-only{display:block !important;}

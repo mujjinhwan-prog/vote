@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voice of YUHAN 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20260902">
+<link rel="stylesheet" href="/assets/style.css?v=20260903">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 0;}
@@ -261,7 +261,7 @@
     if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
     html += bodyHtml;
     html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div>' +
-      '<p class="muted small" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Planning Team.</p></div>';
+      '<p class="muted small print-footer" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Planning Team.</p></div>';
     document.getElementById('app').innerHTML = html;
     document.querySelectorAll('[data-nav]').forEach(function (b) {
       b.addEventListener('click', function () {
