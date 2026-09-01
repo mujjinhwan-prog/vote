@@ -261,7 +261,7 @@
     if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
     html += bodyHtml;
     html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div>' +
-      '<div class="muted small" style="text-align:center;margin-top:8px;opacity:.5;">build 2026-09-02</div></div>';
+      '<p class="muted small" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Planning Team.</p></div>';
     document.getElementById('app').innerHTML = html;
     document.querySelectorAll('[data-nav]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -592,7 +592,10 @@
         }).join('');
         return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + rows + '</div>';
       }
-      var texts = responses.map(function (r) { return { v: r.answers[q.id], t: r.submitted_at, n: r.nickname }; }).filter(function (x) { return x.v; });
+      var texts = responses.map(function (r) { return { v: r.answers[q.id], t: r.submitted_at, n: r.nickname }; }).filter(function (x) {
+        var trimmed = String(x.v == null ? '' : x.v).trim();
+        return trimmed && !/^\.+$/.test(trimmed);
+      });
       var list = texts.length
         ? '<div class="answer-list no-print">' + texts.map(function (x) { return '<div class="answer-item">' + escapeHtml(x.v) + '<time>' + escapeHtml(x.n) + ' · ' + fmtDateTime(x.t) + '</time></div>'; }).join('') + '</div>' +
           '<div class="bubble-cloud">' + texts.map(function (x, ti) { return '<div class="bubble-item bubble-c' + (ti % 6) + '">' + escapeHtml(x.v) + '</div>'; }).join('') + '</div>'
