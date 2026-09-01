@@ -201,12 +201,12 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .daily-side-col{width:auto !important;border-left:0 !important;border-top:1px solid var(--border);padding-left:0 !important;padding-top:8px;margin-top:8px;}
   .daily-period-line{font-size:11px;color:#555;white-space:nowrap;}
   .bubble-cloud{display:flex !important;flex-wrap:wrap;gap:10px;margin-top:6px;}
-  .bubble-item{position:relative;padding:9px 16px;border-radius:16px;font-size:12px;font-weight:500;line-height:1.5;max-width:230px;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.08);break-inside:avoid;}
+  .bubble-item{position:relative;padding:9px 16px;border-radius:16px;font-size:12px;font-weight:500;line-height:1.5;max-width:230px;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.15);break-inside:avoid;color:#000 !important;}
   .bubble-item::after{content:'';position:absolute;left:18px;bottom:-5px;width:11px;height:11px;background:inherit;border-radius:0 0 2px 0;transform:rotate(45deg);}
-  .bubble-c0{background:#FFF4E5;color:#B45309;}
-  .bubble-c1{background:#E7F5FF;color:#1864AB;}
-  .bubble-c2{background:#EBFBEE;color:#2B8A3E;}
-  .bubble-c3{background:#FFF0F6;color:#C2255C;}
-  .bubble-c4{background:#F3F0FF;color:#5F3DC4;}
-  .bubble-c5{background:#FFF9DB;color:#997404;}
+  .bubble-c0{background:#FF6B6B;}
+  .bubble-c1{background:#4DABF7;}
+  .bubble-c2{background:#69DB7C;}
+  .bubble-c3{background:#FFA94D;}
+  .bubble-c4{background:#DA77F2;}
+  .bubble-c5{background:#FFD43B;}
 }

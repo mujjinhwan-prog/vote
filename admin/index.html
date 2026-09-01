@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voice of YUHAN 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20260901">
+<link rel="stylesheet" href="/assets/style.css?v=20260902">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 0;}
@@ -260,7 +260,8 @@
     if (UI.flash) html += '<div class="flash">' + escapeHtml(UI.flash) + '</div>';
     if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
     html += bodyHtml;
-    html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div></div>';
+    html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div>' +
+      '<div class="muted small" style="text-align:center;margin-top:8px;opacity:.5;">build 2026-09-02</div></div>';
     document.getElementById('app').innerHTML = html;
     document.querySelectorAll('[data-nav]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -634,7 +635,7 @@
         }).join('') + '</div>'
       : '<p class="empty-note">응답이 없습니다.</p>';
 
-    var drawCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
+    var drawCard = '<div class="card card-pad no-print" style="margin-bottom:16px;">' +
       '<div class="section-title" style="margin-bottom:6px;">당첨자 추첨</div>' +
       '<p class="muted small" style="margin:0 0 10px;">중복 닉네임은 1명으로 계산합니다. 아래에서 추첨 대상을 체크로 선택하세요.</p>' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">' +
@@ -670,7 +671,7 @@
       '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
       (s.questions.length ? qBlocks : '<p class="empty-note">문항이 없습니다.</p>') + '</div>' +
       drawCard +
-      '<div class="card card-pad">' +
+      '<div class="card card-pad no-print">' +
       '<div class="admin-top" style="margin-bottom:14px;"><div class="section-title">원본 응답</div>' +
       '<button class="btn btn-danger btn-sm" id="reset-open">응답 전체 초기화</button></div>' +
       (responses.length ? '<div class="table-scroll"><table><thead>' + tableHead + '</thead><tbody>' + tableRows + '</tbody></table></div>' : '<p class="empty-note">아직 제출된 응답이 없습니다.</p>') +
