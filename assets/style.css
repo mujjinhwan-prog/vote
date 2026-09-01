@@ -188,6 +188,11 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .theme-toggle,.modal-backdrop,.tabs,.foot-link,#back-list,.survey-row-actions,.btn,input,#draw-stage{display:none !important;}
   .admin-shell{max-width:100%;padding:0;padding-bottom:16mm;}
   .print-footer{position:fixed;bottom:6mm;left:0;right:0;margin:0 !important;font-size:10px;color:#555;text-align:center;}
+  .print-top-row{display:flex !important;gap:16px;align-items:stretch;margin-bottom:16px;}
+  .print-top-row .card{flex:1;margin-bottom:0 !important;}
+  .print-stat-box{flex:none;width:170px;background:#4A4F55;border-radius:8px;padding:18px;display:flex;flex-direction:column;justify-content:center;break-inside:avoid;}
+  .print-stat-value{font-size:34px;font-weight:800;color:#fff;line-height:1;}
+  .print-stat-label{font-size:12px;color:#fff;opacity:.9;margin-top:6px;}
   .card{border:1px solid #ccc;box-shadow:none;}
   .no-print{display:none !important;}
   .print-only{display:block !important;}

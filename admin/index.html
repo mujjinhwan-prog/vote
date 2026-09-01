@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voice of YUHAN 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20260903">
+<link rel="stylesheet" href="/assets/style.css?v=20260904">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 0;}
@@ -671,8 +671,11 @@
       '<span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span>' +
       (s.isActive ? '<span class="badge badge-open">공개중</span>' : '') +
       '</div></div>' +
-      stats +
+      '<div class="no-print">' + stats + dailyCard + '</div>' +
+      '<div class="print-only print-top-row">' +
+      '<div class="print-stat-box"><div class="print-stat-value">' + total + '</div><div class="print-stat-label">전체 설문조사 인원</div></div>' +
       dailyCard +
+      '</div>' +
       '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
       (s.questions.length ? qBlocks : '<p class="empty-note">문항이 없습니다.</p>') + '</div>' +
       drawCard +
