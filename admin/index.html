@@ -593,8 +593,8 @@
         return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + rows + '</div>';
       }
       var texts = responses.map(function (r) { return { v: r.answers[q.id], t: r.submitted_at, n: r.nickname }; }).filter(function (x) {
-        var trimmed = String(x.v == null ? '' : x.v).trim();
-        return trimmed && !/^\.+$/.test(trimmed);
+        var stripped = String(x.v == null ? '' : x.v).replace(/[\s\u200B-\u200D\uFEFF]/g, '');
+        return stripped && !/^[.\u3002\u2024\u2025\u2026\uFF0E]+$/.test(stripped);
       });
       var list = texts.length
         ? '<div class="answer-list no-print">' + texts.map(function (x) { return '<div class="answer-item">' + escapeHtml(x.v) + '<time>' + escapeHtml(x.n) + ' · ' + fmtDateTime(x.t) + '</time></div>'; }).join('') + '</div>' +
@@ -649,6 +649,7 @@
       '</div></div>' +
       candidateListHtml +
       '<p class="muted small" style="margin:10px 0 14px;">현재 추첨 대상: <strong class="mono">' + poolSize + '</strong>명.</p>' +
+      '<div class="btn btn-primary btn-block" style="height:41px;margin-bottom:18px;pointer-events:none;font-weight:700;">' + escapeHtml(s.title) + '</div>' +
       '<div class="field" style="margin-bottom:18px;"><label class="field-label">당첨 인원 수</label>' +
       '<input type="number" id="draw-count" min="1" max="' + Math.max(poolSize, 1) + '" value="' + UI.drawCount + '"></div>' +
       '<div id="draw-stage"></div>' +
