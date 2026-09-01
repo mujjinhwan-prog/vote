@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Voice of YUHAN 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20260904">
+<link rel="stylesheet" href="/assets/style.css?v=20260905">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;gap:14px;padding:24px 0;}
@@ -575,7 +575,6 @@
       '<div class="mono small">' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div>' +
       '</div>' +
       '</div>' +
-      '<div class="print-only daily-period-line">설문기간 ' + (s.startAt ? fmtDateTime(s.startAt) : '미지정') + ' ~ ' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div>' +
       '</div>' +
       '</div>' +
       '</div>';
@@ -669,11 +668,15 @@
       '<div class="admin-top" style="margin-bottom:6px;"><div class="admin-title-row">' +
       '<h2 class="section-title" style="font-size:18px;">' + escapeHtml(s.title) + '</h2>' +
       '<span class="badge badge-' + status + '"><span class="badge-dot"></span>' + STATUS_LABEL[status] + '</span>' +
-      (s.isActive ? '<span class="badge badge-open">공개중</span>' : '') +
+      (s.isActive ? '<span class="badge badge-open no-print">공개중</span>' : '') +
       '</div></div>' +
       '<div class="no-print">' + stats + dailyCard + '</div>' +
       '<div class="print-only print-top-row">' +
+      '<div class="print-stat-col">' +
       '<div class="print-stat-box"><div class="print-stat-value">' + total + '</div><div class="print-stat-label">전체 설문조사 인원</div></div>' +
+      '<div class="print-period-box"><div class="print-period-label">설문조사 기간</div><div class="print-period-value">' +
+      (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '<br>~ ' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div></div>' +
+      '</div>' +
       dailyCard +
       '</div>' +
       '<div class="card card-pad" style="margin-bottom:16px;"><div class="section-title" style="margin-bottom:6px;">문항별 결과</div>' +
@@ -788,19 +791,24 @@
     var candidateKeys = pool.map(function (p) { return p.toLowerCase(); });
     api('draw_winners', { survey_id: surveyId, count: UI.drawCount, candidates: candidateKeys }).then(function (data) {
       var winners = (data.draw && data.draw.winners) || [];
-      if (reduced || !stage) { finishDraw(surveyId); return; }
-      var ticks = 0;
-      var maxTicks = 16;
-      var timer = setInterval(function () {
-        ticks++;
-        var rand = pool[Math.floor(Math.random() * pool.length)];
-        stage.innerHTML = '<div class="draw-stage"><div class="eyebrow">DRAWING</div><div class="draw-reel">' + escapeHtml(rand) + '</div></div>';
-        if (ticks >= maxTicks) {
-          clearInterval(timer);
-          stage.innerHTML = '<div class="draw-stage"><div class="eyebrow" style="color:var(--accent);">결과</div><div class="draw-reel">' + escapeHtml(winners[0] || '-') + '</div></div>';
-          setTimeout(function () { finishDraw(surveyId); }, 600);
-        }
-      }, 90);
+      if (reduced || !stage || !winners.length) { finishDraw(surveyId); return; }
+
+      function revealAt(idx) {
+        if (idx >= winners.length) { setTimeout(function () { finishDraw(surveyId); }, 700); return; }
+        var ticks = 0;
+        var maxTicks = 12;
+        var timer = setInterval(function () {
+          ticks++;
+          var rand = pool[Math.floor(Math.random() * pool.length)];
+          stage.innerHTML = '<div class="draw-stage"><div class="eyebrow">DRAWING ' + (idx + 1) + ' / ' + winners.length + '</div><div class="draw-reel">' + escapeHtml(rand) + '</div></div>';
+          if (ticks >= maxTicks) {
+            clearInterval(timer);
+            stage.innerHTML = '<div class="draw-stage"><div class="eyebrow" style="color:var(--accent);">당첨 ' + (idx + 1) + ' / ' + winners.length + '</div><div class="draw-reel">' + escapeHtml(winners[idx]) + '</div></div>';
+            setTimeout(function () { revealAt(idx + 1); }, 550);
+          }
+        }, 80);
+      }
+      revealAt(0);
     }).catch(function (err) { UI.drawing = false; handleApiError(err); });
   }
 
