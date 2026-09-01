@@ -124,6 +124,7 @@ input:focus-visible,textarea:focus-visible,button:focus-visible,a:focus-visible{
 .tab-btn.active{background:var(--surface);color:var(--ink);box-shadow:none;border:1px solid var(--ink);}
 
 .print-only{display:none;}
+.bubble-cloud{display:none;}
 
 /* stat tiles */
 .stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
@@ -192,12 +193,20 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .answer-list{max-height:none;overflow:visible;}
   .table-scroll{overflow:visible;border:none;}
   table{width:100%;font-size:11px;}
-  .print-answer-table{border-collapse:collapse;margin-top:6px;}
-  .print-answer-table th,.print-answer-table td{white-space:normal !important;overflow:visible !important;max-width:none !important;word-break:break-word;vertical-align:top;border:1px solid #ccc;padding:6px 8px;}
-  .print-answer-table thead th{background:#F2F5F3;}
   .q-result-card,.stat-tile{break-inside:avoid;}
   .page-title,.section-title,h1,h2{break-after:avoid;}
   .daily-bars{overflow-x:visible !important;flex-wrap:wrap;row-gap:14px;height:auto !important;}
   .daily-bar-item{height:120px;}
-  .daily-chart-row{break-inside:avoid;}
+  .daily-chart-row{break-inside:avoid;flex-direction:column !important;}
+  .daily-side-col{width:auto !important;border-left:0 !important;border-top:1px solid var(--border);padding-left:0 !important;padding-top:8px;margin-top:8px;}
+  .daily-period-line{font-size:11px;color:#555;white-space:nowrap;}
+  .bubble-cloud{display:flex !important;flex-wrap:wrap;gap:10px;margin-top:6px;}
+  .bubble-item{position:relative;padding:9px 16px;border-radius:16px;font-size:12px;font-weight:500;line-height:1.5;max-width:230px;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.08);break-inside:avoid;}
+  .bubble-item::after{content:'';position:absolute;left:18px;bottom:-5px;width:11px;height:11px;background:inherit;border-radius:0 0 2px 0;transform:rotate(45deg);}
+  .bubble-c0{background:#FFF4E5;color:#B45309;}
+  .bubble-c1{background:#E7F5FF;color:#1864AB;}
+  .bubble-c2{background:#EBFBEE;color:#2B8A3E;}
+  .bubble-c3{background:#FFF0F6;color:#C2255C;}
+  .bubble-c4{background:#F3F0FF;color:#5F3DC4;}
+  .bubble-c5{background:#FFF9DB;color:#997404;}
 }
