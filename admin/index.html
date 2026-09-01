@@ -131,7 +131,7 @@
     var str = String(seedStr || '');
     var hash = 0;
     for (var i = 0; i < str.length; i++) { hash = (hash * 31 + str.charCodeAt(i)) >>> 0; }
-    return hash % 60;
+    return hash % 11;
   }
   function drawDisplayDate(survey, draw) {
     var base = survey && survey.endAt ? new Date(survey.endAt) : new Date();
