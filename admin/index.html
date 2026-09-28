@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Voice of YUHAN 관리자</title>
+<title>VOY Research 관리자</title>
 <link rel="stylesheet" href="/assets/style.css?v=20260905">
 <link rel="icon" href="data:,">
 <style>
@@ -264,7 +264,7 @@
   function adminShell(bodyHtml) {
     var html = '<div class="admin-shell">' + brandHtml('left') +
       '<div class="admin-top shell-header"><div class="admin-title-row">' +
-      '<div class="eyebrow no-print">ADMIN</div><h1 class="section-title no-print" style="font-size:19px;">Voice of YUHAN 설문 관리</h1>' +
+      '<div class="eyebrow no-print">ADMIN</div><h1 class="section-title no-print" style="font-size:19px;">VOY Research 관리자</h1>' +
       '<h1 class="section-title print-only" style="font-size:19px;">Voice Of Yuhan(VOY) 설문조사</h1>' +
       '</div>' +
       '<div class="tabs">' +
@@ -275,7 +275,7 @@
     if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
     html += bodyHtml;
     html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div>' +
-      '<p class="muted small print-footer" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Strategic Planning Team.</p></div>';
+      '<p class="muted small print-footer" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Strategic Planning.</p></div>';
     document.getElementById('app').innerHTML = html;
     document.querySelectorAll('[data-nav]').forEach(function (b) {
       b.addEventListener('click', function () {
