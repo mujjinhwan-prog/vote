@@ -26,13 +26,15 @@
 .daily-bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--border);}
 .daily-bar-fill.has-value{background:var(--accent);}
 .daily-bar-label{margin-top:8px;font-size:10px;color:var(--ink-muted);white-space:nowrap;}
-.draw-candidate-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
+.draw-candidate-list{border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
 .draw-candidate-option{padding:7px 10px;min-height:auto;min-width:0;}
 .draw-candidate-option span{min-width:0;word-break:break-word;}
-.response-nickname-list{max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
+.response-nickname-list{border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
 .response-nickname-item{padding:7px 10px;min-height:auto;min-width:0;cursor:pointer;}
 .response-nickname-item span{min-width:0;word-break:break-word;}
 .response-nickname-item .response-num{flex:none;color:var(--ink-muted);}
+.response-pagination{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;justify-content:center;}
+.response-pagination .btn{min-width:38px;padding-left:0;padding-right:0;}
 @media (max-width:640px){
   .daily-chart-row{flex-direction:column;}
   .daily-side-col{width:auto;border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px;display:flex;gap:28px;}
@@ -212,7 +214,7 @@
   var SURVEYS = [];
   var DRAFT = null;
   var CURRENT = null;         // { survey, responses, draw }
-  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '', viewResponseId: null, drawSelected: {} };
+  var UI = { passcodeError: '', busy: false, error: '', flash: '', drawCount: 5, drawing: false, drawReelText: '', deleteSurveyId: null, deleteSurveyTitle: '', viewResponseId: null, drawSelected: {}, responsePage: 1 };
 
   try { PASSCODE = sessionStorage.getItem('voy_admin_passcode') || null; } catch (e) {}
 
@@ -530,6 +532,7 @@
     UI.busy = true; render();
     api('get_survey_results', { id: surveyId }).then(function (data) {
       if (UI.drawSelectedSurveyId !== surveyId) { UI.drawSelected = {}; UI.drawSelectedSurveyId = surveyId; }
+      if (UI.responsePageSurveyId !== surveyId) { UI.responsePage = 1; UI.responsePageSurveyId = surveyId; }
       CURRENT = { survey: mapSurvey(data.survey), responses: data.responses || [], draw: data.draw };
       UI.busy = false;
       render();
@@ -622,12 +625,29 @@
       return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
     }).join('');
 
+    var RESPONSE_PAGE_SIZE = 15;
+    var reversedResponses = responses.slice().reverse();
+    var responseTotalPages = Math.max(1, Math.ceil(reversedResponses.length / RESPONSE_PAGE_SIZE));
+    if (UI.responsePage > responseTotalPages) UI.responsePage = responseTotalPages;
+    if (UI.responsePage < 1) UI.responsePage = 1;
+    var responsePageStart = (UI.responsePage - 1) * RESPONSE_PAGE_SIZE;
+    var responsePageItems = reversedResponses.slice(responsePageStart, responsePageStart + RESPONSE_PAGE_SIZE);
+
+    var responsePaginationHtml = '';
+    if (responseTotalPages > 1) {
+      for (var rp = 1; rp <= responseTotalPages; rp++) {
+        responsePaginationHtml += '<button type="button" class="btn btn-sm ' + (rp === UI.responsePage ? 'btn-primary' : 'btn-ghost') + '" data-response-page="' + rp + '">' + rp + '</button>';
+      }
+      responsePaginationHtml = '<div class="response-pagination">' + responsePaginationHtml + '</div>';
+    }
+
     var responseNicknameGrid = responses.length
-      ? '<div class="response-nickname-list">' + responses.slice().reverse().map(function (r, i) {
+      ? '<div class="response-nickname-list">' + responsePageItems.map(function (r, i) {
+          var num = reversedResponses.length - (responsePageStart + i);
           return '<div class="choice-option draw-candidate-option response-nickname-item" data-view-response="' + escapeHtml(r.id) + '">' +
-            '<span class="mono small response-num">#' + (responses.length - i) + '</span>' +
+            '<span class="mono small response-num">#' + num + '</span>' +
             '<span>' + escapeHtml(r.nickname) + '</span></div>';
-        }).join('') + '</div>'
+        }).join('') + '</div>' + responsePaginationHtml
       : '<p class="empty-note">아직 제출된 응답이 없습니다.</p>';
 
     var draw = CURRENT.draw;
@@ -749,6 +769,9 @@
     });
     document.querySelectorAll('[data-view-response]').forEach(function (b) {
       b.addEventListener('click', function () { UI.viewResponseId = b.getAttribute('data-view-response'); render(); });
+    });
+    document.querySelectorAll('[data-response-page]').forEach(function (b) {
+      b.addEventListener('click', function () { UI.responsePage = parseInt(b.getAttribute('data-response-page'), 10) || 1; render(); });
     });
     var viewBackdrop = document.getElementById('view-response-backdrop');
     if (viewBackdrop) {
