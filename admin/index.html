@@ -29,11 +29,16 @@
 .draw-candidate-list{max-height:240px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
 .draw-candidate-option{padding:7px 10px;min-height:auto;min-width:0;}
 .draw-candidate-option span{min-width:0;word-break:break-word;}
+.response-nickname-list{max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;padding:8px;display:grid;grid-template-columns:repeat(3, 1fr);gap:4px 10px;align-items:start;}
+.response-nickname-item{padding:7px 10px;min-height:auto;min-width:0;cursor:pointer;}
+.response-nickname-item span{min-width:0;word-break:break-word;}
+.response-nickname-item .response-num{flex:none;color:var(--ink-muted);}
 @media (max-width:640px){
   .daily-chart-row{flex-direction:column;}
   .daily-side-col{width:auto;border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px;display:flex;gap:28px;}
   .daily-side-item{margin-bottom:0 !important;}
   .draw-candidate-list{grid-template-columns:1fr;}
+  .response-nickname-list{grid-template-columns:1fr;}
 }
 </style>
 </head>
@@ -617,19 +622,13 @@
       return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
     }).join('');
 
-    var tableHead = '<tr><th>#</th><th>닉네임</th><th>제출 일시</th>' + s.questions.map(function (q, i) { return '<th>Q' + (i + 1) + '</th>'; }).join('') + '<th>관리</th></tr>';
-    var tableRows = responses.slice().reverse().map(function (r, i) {
-      var cells = s.questions.map(function (q) {
-        var a = r.answers[q.id];
-        var text = q.type === 'choice' ? (q.choices[a] || '-') : (a || '-');
-        return '<td title="' + escapeHtml(text) + '">' + escapeHtml(text) + '</td>';
-      }).join('');
-      return '<tr><td class="mono">' + (responses.length - i) + '</td><td>' + escapeHtml(r.nickname) + '</td><td class="mono">' + fmtDateTime(r.submitted_at) + '</td>' + cells +
-        '<td><div class="survey-row-actions">' +
-        '<button class="btn btn-ghost btn-sm" data-view-response="' + escapeHtml(r.id) + '">전체보기</button>' +
-        '<button class="btn btn-danger btn-sm" data-delete-response="' + escapeHtml(r.id) + '">삭제</button>' +
-        '</div></td></tr>';
-    }).join('');
+    var responseNicknameGrid = responses.length
+      ? '<div class="response-nickname-list">' + responses.slice().reverse().map(function (r, i) {
+          return '<div class="choice-option draw-candidate-option response-nickname-item" data-view-response="' + escapeHtml(r.id) + '">' +
+            '<span class="mono small response-num">#' + (responses.length - i) + '</span>' +
+            '<span>' + escapeHtml(r.nickname) + '</span></div>';
+        }).join('') + '</div>'
+      : '<p class="empty-note">아직 제출된 응답이 없습니다.</p>';
 
     var draw = CURRENT.draw;
     var nicknameEntries = [];
@@ -700,7 +699,8 @@
       '<div class="card card-pad no-print">' +
       '<div class="admin-top" style="margin-bottom:14px;"><div class="section-title">원본 응답</div>' +
       '<button class="btn btn-danger btn-sm" id="reset-open">응답 전체 초기화</button></div>' +
-      (responses.length ? '<div class="table-scroll"><table><thead>' + tableHead + '</thead><tbody>' + tableRows + '</tbody></table></div>' : '<p class="empty-note">아직 제출된 응답이 없습니다.</p>') +
+      '<p class="muted small" style="margin:0 0 10px;">닉네임을 클릭하면 전체 응답을 볼 수 있어요.</p>' +
+      responseNicknameGrid +
       '</div>';
 
     var modal = UI.showResetModal
