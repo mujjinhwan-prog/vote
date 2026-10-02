@@ -207,7 +207,8 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .answer-list{max-height:none;overflow:visible;}
   .table-scroll{overflow:visible;border:none;}
   table{width:100%;font-size:11px;}
-  .q-result-card,.stat-tile{break-inside:avoid;}
+  .stat-tile{break-inside:avoid;}
+  .bar-row{break-inside:avoid;}
   .page-title,.section-title,h1,h2{break-after:avoid;}
   .daily-bars{overflow-x:visible !important;flex-wrap:wrap;row-gap:14px;height:auto !important;}
   .daily-bar-item{height:120px;}
