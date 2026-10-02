@@ -214,8 +214,8 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .daily-chart-row{break-inside:avoid;flex-direction:column !important;}
   .daily-side-col{width:auto !important;border-left:0 !important;border-top:1px solid var(--border);padding-left:0 !important;padding-top:8px;margin-top:8px;}
   .daily-period-line{font-size:11px;color:#555;white-space:nowrap;}
-  .bubble-cloud{display:flex !important;flex-wrap:wrap;gap:10px;margin-top:6px;}
-  .bubble-item{position:relative;padding:9px 16px;border-radius:16px;font-size:12px;font-weight:500;line-height:1.5;max-width:230px;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.15);break-inside:avoid;color:#000 !important;}
+  .bubble-cloud{display:block !important;columns:200px 3;column-gap:12px;margin-top:6px;}
+  .bubble-item{position:relative;display:block;width:100%;padding:9px 16px;margin:0 0 10px;border-radius:16px;font-size:12px;font-weight:500;line-height:1.5;word-break:break-word;box-shadow:0 1px 2px rgba(0,0,0,.15);break-inside:avoid;color:#000 !important;}
   .bubble-item::after{content:'';position:absolute;left:18px;bottom:-5px;width:11px;height:11px;background:inherit;border-radius:0 0 2px 0;transform:rotate(45deg);}
   .bubble-c0{background:#FF6B6B;}
   .bubble-c1{background:#4DABF7;}
