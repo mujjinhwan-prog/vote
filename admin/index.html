@@ -97,6 +97,18 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
+  var _bubbleMeasureEl = null;
+  function measureBubbleHeight(text) {
+    if (!_bubbleMeasureEl) {
+      _bubbleMeasureEl = document.createElement('div');
+      _bubbleMeasureEl.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;width:221px;' +
+        'box-sizing:border-box;padding:9px 16px;margin:0;font-size:12px;font-weight:500;line-height:1.5;word-break:break-word;' +
+        'font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;';
+      document.body.appendChild(_bubbleMeasureEl);
+    }
+    _bubbleMeasureEl.textContent = text;
+    return _bubbleMeasureEl.offsetHeight + 10; /* + bubble margin-bottom */
+  }
   function uid(prefix) { return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function fmtDateTime(iso) {
@@ -622,7 +634,7 @@
       var bubbleCols = [[], [], []];
       var bubbleColHeights = [0, 0, 0];
       bubbleTexts.forEach(function (x, ti) {
-        var est = Math.max(1, Math.ceil(String(x.v == null ? '' : x.v).length / 14));
+        var est = measureBubbleHeight(String(x.v == null ? '' : x.v));
         var mi = 0;
         if (bubbleColHeights[1] < bubbleColHeights[mi]) mi = 1;
         if (bubbleColHeights[2] < bubbleColHeights[mi]) mi = 2;
