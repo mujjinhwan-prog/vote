@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261006d">
+<link rel="stylesheet" href="/assets/style.css?v=20261006e">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -115,7 +115,7 @@
     });
   }
   var _bubbleMeasureEl = null;
-  function measureBubbleHeight(text, fontSize, isGroup, badge) {
+  function measureBubbleHeight(text, fontSize, isGroup, badge, width) {
     if (!_bubbleMeasureEl) {
       _bubbleMeasureEl = document.createElement('div');
       _bubbleMeasureEl.style.cssText = 'position:absolute;visibility:hidden;pointer-events:none;left:-9999px;top:0;width:221px;' +
@@ -123,6 +123,7 @@
         'font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif;';
       document.body.appendChild(_bubbleMeasureEl);
     }
+    _bubbleMeasureEl.style.width = (width || 221) + 'px';
     _bubbleMeasureEl.style.fontSize = (fontSize || 12) + 'px';
     _bubbleMeasureEl.style.padding = isGroup ? '12px 18px' : '9px 16px';
     _bubbleMeasureEl.innerHTML = escapeHtml(text) +
@@ -650,7 +651,7 @@
             '<span class="bar-count">' + counts[ci] + '건 · ' + pct + '%</span>' +
             '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
         }).join('');
-        return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + rows + '</div>';
+        return '<div class="q-result-card keep-together"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + rows + '</div>';
       }
       var texts = responses.map(function (r) { return { id: r.id, v: r.answers[q.id], t: r.submitted_at, n: r.nickname }; }).filter(function (x) {
         var stripped = String(x.v == null ? '' : x.v).replace(/[\s​-‍﻿]/g, '');
@@ -732,29 +733,48 @@
       });
       var bubbleCols = [[], [], []];
       var bubbleColHeights = [0, 0, 0];
-      printItems.forEach(function (it, ti) {
+      var wideItems = [];
+      var wideHeight = 0;
+      var groupSeq = 0, singleSeq = 0;
+      printItems.forEach(function (it) {
+        if (it.kind === 'group') { it.hue = groupSeq % 5; groupSeq++; }
+        else if (it.kind === 'single') { it.pal = singleSeq % 6; singleSeq++; }
+      });
+      printItems.forEach(function (it) {
         it.fs = it.kind === 'group' ? Math.round(Math.min(18, 13 + it.count * 0.5) * 10) / 10 : 12;
-        var est = measureBubbleHeight(it.text, it.fs, it.kind !== 'single', showCount ? it.count + '명' : '');
+        var badge = showCount ? it.count + '명' : '';
+        var est = measureBubbleHeight(it.text, it.fs, it.kind !== 'single', badge);
+        /* very long answers become full-width (horizontal) bubbles under the columns instead of one tall column */
+        if (est >= 125) {
+          wideItems.push(it);
+          wideHeight += measureBubbleHeight(it.text, it.fs, it.kind !== 'single', badge, 650);
+          return;
+        }
         var mi = 0;
         if (bubbleColHeights[1] < bubbleColHeights[mi]) mi = 1;
         if (bubbleColHeights[2] < bubbleColHeights[mi]) mi = 2;
-        bubbleCols[mi].push({ it: it, ti: ti });
+        bubbleCols[mi].push(it);
         bubbleColHeights[mi] += est;
       });
+      function bubbleHtml(it) {
+        var cls = it.kind === 'other' ? 'bubble-other'
+          : (it.kind === 'group' ? 'bubble-g' + it.tier + ' bubble-h' + it.hue : 'bubble-s bubble-p' + it.pal);
+        return '<div class="bubble-item ' + cls + (it.kind !== 'single' ? ' is-group' : '') + '"' +
+          (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
+          (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
+      }
       var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
         '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
-          return '<div class="bubble-col">' + col.map(function (item) {
-            var it = item.it;
-            return '<div class="bubble-item ' + (it.kind === 'other' ? 'bubble-other' : (it.kind === 'group' ? 'bubble-g' + it.tier : 'bubble-s')) + (it.kind !== 'single' ? ' is-group' : '') + '"' +
-              (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
-              (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
-          }).join('') + '</div>';
-        }).join('') + '</div>';
+          return '<div class="bubble-col">' + col.map(bubbleHtml).join('') + '</div>';
+        }).join('') + '</div>' +
+        (wideItems.length ? '<div class="bubble-wide-row">' + wideItems.map(bubbleHtml).join('') + '</div>' : '');
+      var cardEst = 70 + Math.max(bubbleColHeights[0], bubbleColHeights[1], bubbleColHeights[2]) + wideHeight + (showCount ? 24 : 0);
+      var keepClass = cardEst <= 900 ? ' keep-together' : '';
 
       var list = texts.length
         ? groupPanel + otherPanel + pickList + bubbleCloudHtml
         : '<p class="empty-note">아직 응답이 없습니다.</p>';
-      return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
+      return '<div class="q-result-card' + keepClass + '"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
     }).join('');
 
     var RESPONSE_PAGE_SIZE = 15;

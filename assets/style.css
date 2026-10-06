@@ -238,12 +238,20 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .bubble-item::after{content:'';position:absolute;left:18px;bottom:-5px;width:11px;height:11px;background:inherit;border-radius:0 0 2px 0;transform:rotate(45deg);}
   .bubble-count{display:block;margin-top:5px;text-align:right;font-size:10px;font-weight:700;line-height:1.4;}
   .bubble-count b{display:inline-block;padding:0 8px;border-radius:999px;background:#fff;color:#262E2B;font-weight:700;}
-  /* colors follow the admin palette: deep green = majority, lighter green = smaller groups, pale green = single opinions, grey = other */
-  .bubble-g1{background:#0F5C42;color:#fff !important;}
-  .bubble-g2{background:#3F8A6E;color:#fff !important;}
-  .bubble-g3{background:#A8CDBB;}
-  .bubble-s{background:#E1EFE8;border:1px solid #C3DACE;}
+  /* palette: admin deep green first, then harmonious teal / indigo / plum / amber; tier = how many people agree (dark = many) */
+  .bubble-g1,.bubble-g2{color:#fff !important;}
+  .bubble-g1.bubble-h0{background:#0F5C42;} .bubble-g2.bubble-h0{background:#2F7D61;} .bubble-g3.bubble-h0{background:#A8CDBB;}
+  .bubble-g1.bubble-h1{background:#1B5E78;} .bubble-g2.bubble-h1{background:#2F7A96;} .bubble-g3.bubble-h1{background:#B5D4E0;}
+  .bubble-g1.bubble-h2{background:#3A4F8C;} .bubble-g2.bubble-h2{background:#5468A3;} .bubble-g3.bubble-h2{background:#C3CCE6;}
+  .bubble-g1.bubble-h3{background:#6A3F7A;} .bubble-g2.bubble-h3{background:#86599A;} .bubble-g3.bubble-h3{background:#D4C2DC;}
+  .bubble-g1.bubble-h4{background:#8A5A12;} .bubble-g2.bubble-h4{background:#9A6A1C;} .bubble-g3.bubble-h4{background:#E9D3A8;}
+  .bubble-s{border:1px solid rgba(0,0,0,.08);}
+  .bubble-p0{background:#E1EFE8;} .bubble-p1{background:#DCEBF1;} .bubble-p2{background:#E3E8F5;}
+  .bubble-p3{background:#EBE3F0;} .bubble-p4{background:#F5EBD3;} .bubble-p5{background:#F3E2DD;}
   .bubble-other{background:#E4E6E8;border:1px solid #CDD1D4;}
-  .bubble-g1 .bubble-count b,.bubble-g2 .bubble-count b{color:#0F5C42;}
+  .bubble-g1 .bubble-count b,.bubble-g2 .bubble-count b{color:#262E2B;}
+  .bubble-wide-row{clear:both;padding-top:2px;}
+  .bubble-wide-row .bubble-item{width:100%;}
+  .q-result-card.keep-together{break-inside:avoid;}
   .bubble-legend{margin:2px 0 6px;font-size:10px;color:#555;}
 }
