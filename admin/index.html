@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261006c">
+<link rel="stylesheet" href="/assets/style.css?v=20261006d">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -725,6 +725,11 @@
       printItems = printItems.concat(singleItems);
       if (otherMembers.length) printItems.push({ kind: 'other', text: '기타 의견', count: otherMembers.length });
 
+      var maxGroupCount = 0;
+      printItems.forEach(function (it) { if (it.kind === 'group' && it.count > maxGroupCount) maxGroupCount = it.count; });
+      printItems.forEach(function (it) {
+        if (it.kind === 'group') { var ratio = it.count / maxGroupCount; it.tier = ratio >= 0.6 ? 1 : (ratio >= 0.3 ? 2 : 3); }
+      });
       var bubbleCols = [[], [], []];
       var bubbleColHeights = [0, 0, 0];
       printItems.forEach(function (it, ti) {
@@ -736,11 +741,11 @@
         bubbleCols[mi].push({ it: it, ti: ti });
         bubbleColHeights[mi] += est;
       });
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 클수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
         '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
           return '<div class="bubble-col">' + col.map(function (item) {
             var it = item.it;
-            return '<div class="bubble-item ' + (it.kind === 'other' ? 'bubble-other' : 'bubble-c' + (item.ti % 6)) + (it.kind !== 'single' ? ' is-group' : '') + '"' +
+            return '<div class="bubble-item ' + (it.kind === 'other' ? 'bubble-other' : (it.kind === 'group' ? 'bubble-g' + it.tier : 'bubble-s')) + (it.kind !== 'single' ? ' is-group' : '') + '"' +
               (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
               (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
           }).join('') + '</div>';
