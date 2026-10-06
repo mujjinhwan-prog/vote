@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261006e">
+<link rel="stylesheet" href="/assets/style.css?v=20261006g">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -860,8 +860,9 @@
       '<div class="print-only print-top-row">' +
       '<div class="print-stat-col">' +
       '<div class="print-stat-box"><div class="print-stat-value">' + total + '</div><div class="print-stat-label">전체 설문조사 인원</div></div>' +
-      '<div class="print-period-box"><div class="print-period-label">설문조사 기간</div><div class="print-period-value">' +
+      '<div class="print-period-box"><div class="print-info-col"><div class="print-period-label">설문조사 기간</div><div class="print-period-value">' +
       (s.startAt ? fmtDateTime(s.startAt) : '미지정') + '<br>~ ' + (s.endAt ? fmtDateTime(s.endAt) : '미지정') + '</div></div>' +
+      '<div class="print-info-col print-info-target"><div class="print-period-label">대상</div><div class="print-period-value">병원사업부(ETC) 직원</div></div></div>' +
       '</div>' +
       dailyCard +
       '</div>' +
