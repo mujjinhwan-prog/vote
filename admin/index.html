@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261006b">
+<link rel="stylesheet" href="/assets/style.css?v=20261006c">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -45,7 +45,13 @@
 .og-members time{margin-left:8px;font-size:11px;opacity:.8;}
 .og-pick{display:flex;gap:10px;align-items:flex-start;cursor:pointer;}
 .og-pick input{margin-top:3px;flex:none;width:16px;height:16px;accent-color:var(--accent);}
-.og-actions{margin-top:10px;}
+.og-actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;}
+.og-other{border-color:var(--border);background:var(--surface-2);}
+.og-other .og-count{color:var(--ink-muted);}
+.og-rep{display:flex;gap:8px;align-items:flex-start;cursor:pointer;}
+.og-rep input{margin-top:3px;flex:none;accent-color:var(--accent);}
+.og-members{list-style:none;padding-left:0;}
+.og-x{border:1px solid var(--border);background:var(--surface);color:var(--ink-muted);border-radius:4px;font-size:11px;padding:1px 6px;cursor:pointer;margin-left:6px;}
 @media (max-width:640px){
   .daily-chart-row{flex-direction:column;}
   .daily-side-col{width:auto;border-left:0;border-top:1px solid var(--border);padding-left:0;padding-top:14px;display:flex;gap:28px;}
@@ -204,6 +210,7 @@
       var textT = prevT ? prevT.text : ('하고 싶은 말 ' + (j + 1));
       var tq = { id: prevT ? prevT.id : uid('t'), type: 'text', text: textT };
       if (prevT && prevT.groups) tq.groups = prevT.groups;
+      if (prevT && prevT.others) tq.others = prevT.others;
       out.push(tq);
     }
     return out;
@@ -657,9 +664,22 @@
         var members = (g.members || []).map(function (rid) { return textById[rid]; }).filter(function (m) { return m && !groupedIds[m.id]; });
         if (members.length < 2) return;
         members.forEach(function (m) { groupedIds[m.id] = true; });
-        validGroups.push({ id: g.id, label: String(g.label || '').trim(), members: members });
+        var repOk = g.rep && members.some(function (m) { return m.id === g.rep; });
+        var lbl = String(g.label || '').trim();
+        validGroups.push({ id: g.id, label: lbl, repId: repOk ? g.rep : (lbl ? null : members[0].id), members: members });
       });
-      var singles = texts.filter(function (x) { return !groupedIds[x.id]; });
+      validGroups.forEach(function (g) {
+        var repM = g.members.filter(function (m) { return m.id === g.repId; })[0];
+        g.text = g.label || String((repM || g.members[0]).v);
+      });
+      var otherMembers = [];
+      (q.others || []).forEach(function (rid) {
+        var m = textById[rid];
+        if (m && !groupedIds[m.id]) { otherMembers.push(m); }
+      });
+      var otherIds = {};
+      otherMembers.forEach(function (m) { otherIds[m.id] = true; });
+      var singles = texts.filter(function (x) { return !groupedIds[x.id] && !otherIds[x.id]; });
 
       /* ----- screen: group manager + pick list ----- */
       var groupPanel = validGroups.length
@@ -667,54 +687,67 @@
             var key = idx + ':' + g.id;
             return '<div class="og-group"><div class="og-group-head"><span class="og-count">' + g.members.length + '명 같은 의견</span>' +
               '<button type="button" class="btn btn-ghost btn-sm" data-og-ungroup="' + escapeHtml(key) + '">묶음 해제</button></div>' +
-              '<label class="field-hint" style="display:block;margin:6px 0 4px;">대표 문구 (인쇄 시 풍선에 표시됩니다)</label>' +
-              '<input type="text" class="og-label" data-og-label="' + escapeHtml(key) + '" value="' + escapeHtml(g.label || String(g.members[0].v)) + '">' +
-              '<ul class="og-members">' + g.members.map(function (m) { return '<li>' + escapeHtml(m.v) + '<time>' + escapeHtml(m.n) + '</time></li>'; }).join('') + '</ul></div>';
+              '<div class="field-hint" style="margin:6px 0 4px;">대표 문구 — 아래에서 하나를 고르거나 직접 입력하세요 (인쇄 시 풍선에 표시)</div>' +
+              '<input type="text" class="og-label" data-og-label="' + escapeHtml(key) + '" value="' + escapeHtml(g.text) + '">' +
+              '<ul class="og-members">' + g.members.map(function (m) {
+                return '<li><label class="og-rep"><input type="radio" name="og-rep-' + escapeHtml(key) + '" data-og-rep="' + escapeHtml(key) + '" value="' + escapeHtml(m.id) + '"' + (g.repId === m.id ? ' checked' : '') + '>' +
+                  '<span>' + escapeHtml(m.v) + '<time>' + escapeHtml(m.n) + '</time></span></label></li>';
+              }).join('') + '</ul></div>';
           }).join('') + '</div>'
+        : '';
+      var otherPanel = otherMembers.length
+        ? '<div class="og-groups no-print"><div class="og-group og-other"><div class="og-group-head"><span class="og-count">기타 의견 ' + otherMembers.length + '명</span>' +
+          '<button type="button" class="btn btn-ghost btn-sm" data-og-other-clear="' + idx + '">기타 의견 전체 해제</button></div>' +
+          '<div class="field-hint" style="margin:6px 0 0;">인쇄 시 "기타 의견 ' + otherMembers.length + '명" 풍선 하나로 표시됩니다.</div>' +
+          '<ul class="og-members">' + otherMembers.map(function (m) {
+            return '<li>' + escapeHtml(m.v) + '<time>' + escapeHtml(m.n) + '</time> <button type="button" class="og-x" data-og-other-remove="' + idx + ':' + escapeHtml(m.id) + '">빼기</button></li>';
+          }).join('') + '</ul></div></div>'
         : '';
       var selCount = 0;
       singles.forEach(function (x) { if (UI.groupSel[idx + ':' + x.id]) selCount++; });
       var pickList = singles.length
-        ? '<div class="og-hint no-print muted small">같은 의견을 2개 이상 체크하고 [선택한 의견 묶기]를 누르면 인쇄 시 하나의 큰 풍선(○명)으로 표시돼요.</div>' +
+        ? '<div class="og-hint no-print muted small">같은 의견을 2개 이상 체크하고 [선택한 의견 묶기]를 누르면 큰 풍선(○명)으로, 의미가 맞지 않는 답변은 체크 후 [기타 의견으로 묶기]를 누르면 "기타 의견"으로 표시돼요.</div>' +
           '<div class="answer-list no-print">' + singles.map(function (x) {
             return '<label class="answer-item og-pick"><input type="checkbox" data-og-check="' + idx + ':' + escapeHtml(x.id) + '"' + (UI.groupSel[idx + ':' + x.id] ? ' checked' : '') + '>' +
               '<span>' + escapeHtml(x.v) + '<time>' + escapeHtml(x.n) + ' · ' + fmtDateTime(x.t) + '</time></span></label>';
           }).join('') + '</div>' +
-          '<div class="og-actions no-print"><button type="button" class="btn btn-primary btn-sm" data-og-make="' + idx + '"' + (selCount < 2 ? ' disabled' : '') + '>선택한 의견 묶기 (' + selCount + ')</button></div>'
+          '<div class="og-actions no-print"><button type="button" class="btn btn-primary btn-sm" data-og-make="' + idx + '"' + (selCount < 2 ? ' disabled' : '') + '>선택한 의견 묶기 (' + selCount + ')</button> ' +
+            '<button type="button" class="btn btn-ghost btn-sm" data-og-other="' + idx + '"' + (selCount < 1 ? ' disabled' : '') + '>기타 의견으로 묶기 (' + selCount + ')</button></div>'
         : '';
 
       /* ----- print: big bubbles for groups, small ones for singles, packed into 3 columns ----- */
-      var showCount = validGroups.length > 0;
+      var showCount = validGroups.length > 0 || otherMembers.length > 0;
       var printItems = validGroups.map(function (g) {
-        return { kind: 'group', text: g.label || String(g.members[0].v), count: g.members.length };
+        return { kind: 'group', text: g.text, count: g.members.length };
       }).sort(function (a, b2) { return b2.count - a.count; });
       var singleItems = singles.map(function (x) { return { kind: 'single', text: String(x.v == null ? '' : x.v), count: 1 }; })
         .sort(function (a, b2) { return a.text.length - b2.text.length; });
       printItems = printItems.concat(singleItems);
+      if (otherMembers.length) printItems.push({ kind: 'other', text: '기타 의견', count: otherMembers.length });
 
       var bubbleCols = [[], [], []];
       var bubbleColHeights = [0, 0, 0];
       printItems.forEach(function (it, ti) {
         it.fs = it.kind === 'group' ? Math.round(Math.min(18, 13 + it.count * 0.5) * 10) / 10 : 12;
-        var est = measureBubbleHeight(it.text, it.fs, it.kind === 'group', showCount ? it.count + '명' : '');
+        var est = measureBubbleHeight(it.text, it.fs, it.kind !== 'single', showCount ? it.count + '명' : '');
         var mi = 0;
         if (bubbleColHeights[1] < bubbleColHeights[mi]) mi = 1;
         if (bubbleColHeights[2] < bubbleColHeights[mi]) mi = 2;
         bubbleCols[mi].push({ it: it, ti: ti });
         bubbleColHeights[mi] += est;
       });
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 클수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다.</p>' : '') +
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 클수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
         '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
           return '<div class="bubble-col">' + col.map(function (item) {
             var it = item.it;
-            return '<div class="bubble-item bubble-c' + (item.ti % 6) + (it.kind === 'group' ? ' is-group' : '') + '"' +
+            return '<div class="bubble-item ' + (it.kind === 'other' ? 'bubble-other' : 'bubble-c' + (item.ti % 6)) + (it.kind !== 'single' ? ' is-group' : '') + '"' +
               (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
               (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
           }).join('') + '</div>';
         }).join('') + '</div>';
 
       var list = texts.length
-        ? groupPanel + pickList + bubbleCloudHtml
+        ? groupPanel + otherPanel + pickList + bubbleCloudHtml
         : '<p class="empty-note">아직 응답이 없습니다.</p>';
       return '<div class="q-result-card"><div class="section-title" style="margin-bottom:4px;"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' + escapeHtml(q.text) + '</div>' + list + '</div>';
     }).join('');
@@ -877,6 +910,18 @@
     document.querySelectorAll('[data-og-ungroup]').forEach(function (b) {
       b.addEventListener('click', function () { ungroupOpinion(b.getAttribute('data-og-ungroup')); });
     });
+    document.querySelectorAll('[data-og-rep]').forEach(function (r) {
+      r.addEventListener('change', function () { setGroupRep(r.getAttribute('data-og-rep'), r.value); });
+    });
+    document.querySelectorAll('[data-og-other]').forEach(function (b) {
+      b.addEventListener('click', function () { makeOtherOpinion(parseInt(b.getAttribute('data-og-other'), 10)); });
+    });
+    document.querySelectorAll('[data-og-other-remove]').forEach(function (b) {
+      b.addEventListener('click', function () { removeOtherOpinion(b.getAttribute('data-og-other-remove')); });
+    });
+    document.querySelectorAll('[data-og-other-clear]').forEach(function (b) {
+      b.addEventListener('click', function () { clearOtherOpinions(parseInt(b.getAttribute('data-og-other-clear'), 10)); });
+    });
     document.querySelectorAll('[data-og-label]').forEach(function (inp) {
       inp.addEventListener('change', function () { setGroupLabel(inp.getAttribute('data-og-label'), inp.value); });
     });
@@ -934,6 +979,8 @@
     var n = selectedIdsFor(qi).length;
     btn.disabled = n < 2;
     btn.textContent = '선택한 의견 묶기 (' + n + ')';
+    var ob = document.querySelector('[data-og-other="' + qi + '"]');
+    if (ob) { ob.disabled = n < 1; ob.textContent = '기타 의견으로 묶기 (' + n + ')'; }
   }
   function persistGroups() {
     return api('save_survey', CURRENT.survey).catch(function (err) {
@@ -968,7 +1015,45 @@
   function setGroupLabel(key, value) {
     var f = findGroup(key);
     if (!f) return;
-    f.q.groups[f.i].label = String(value || '').trim();
+    var g = f.q.groups[f.i];
+    g.label = String(value || '').trim();
+    if (g.label) {
+      g.rep = null;
+      document.querySelectorAll('[data-og-rep="' + key + '"]').forEach(function (r) { r.checked = false; });
+    }
+    persistGroups();
+  }
+  function setGroupRep(key, rid) {
+    var f = findGroup(key);
+    if (!f) return;
+    var g = f.q.groups[f.i];
+    g.rep = rid;
+    g.label = '';
+    render();
+    persistGroups();
+  }
+  function makeOtherOpinion(qi) {
+    var q = CURRENT.survey.questions[qi];
+    var ids = selectedIdsFor(qi);
+    if (!q || ids.length < 1) return;
+    q.others = (q.others || []).slice();
+    ids.forEach(function (rid) { if (q.others.indexOf(rid) < 0) q.others.push(rid); delete UI.groupSel[qi + ':' + rid]; });
+    render();
+    persistGroups();
+  }
+  function removeOtherOpinion(key) {
+    var qi = parseInt(key.slice(0, key.indexOf(':')), 10), rid = key.slice(key.indexOf(':') + 1);
+    var q = CURRENT.survey.questions[qi];
+    if (!q || !q.others) return;
+    q.others = q.others.filter(function (x) { return x !== rid; });
+    render();
+    persistGroups();
+  }
+  function clearOtherOpinions(qi) {
+    var q = CURRENT.survey.questions[qi];
+    if (!q) return;
+    q.others = [];
+    render();
     persistGroups();
   }
 
