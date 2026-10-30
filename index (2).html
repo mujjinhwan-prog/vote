@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOY Research page</title>
+<link rel="stylesheet" href="/assets/style.css?v=20261030a">
+<link rel="icon" href="data:,">
+</head>
+<body>
+<script>
+(function () {
+  try {
+    var t = localStorage.getItem('voy_theme');
+    if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<div id="theme-toggle-mount"></div>
+<div id="app"><div class="survey-shell"><div class="boot-loading">불러오는 중…</div></div></div>
+
+<script src="/config.js"></script>
+<script src="/assets/supabase-js.min.js"></script>
+<script>
+(function () {
+  var sb = window.supabase.createClient(window.SUPABASE_CONFIG.url, window.SUPABASE_CONFIG.anonKey);
+
+  /* ---------------- theme toggle ---------------- */
+  var ICON_PALETTE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 100 20c1.1 0 2-.9 2-2 0-.5-.2-.9-.5-1.3-.3-.4-.5-.8-.5-1.2 0-1.1.9-2 2-2h2.4c1.9 0 3.6-1.6 3.6-3.6C21 6.5 17 2 12 2z"/><circle cx="7.2" cy="10.2" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.8" cy="6.8" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="8.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="16.5" cy="12.8" r="1.1" fill="currentColor" stroke="none"/></svg>';
+  var ICON_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>';
+  var ICON_MOON = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>';
+
+  function getTheme() {
+    try { return localStorage.getItem('voy_theme') === 'dark' ? 'dark' : 'light'; } catch (e) { return 'light'; }
+  }
+  function setTheme(t) {
+    document.documentElement.setAttribute('data-theme', t);
+    try { localStorage.setItem('voy_theme', t); } catch (e) {}
+    renderThemeToggle();
+  }
+  function renderThemeToggle() {
+    var mount = document.getElementById('theme-toggle-mount');
+    if (!mount) return;
+    var t = getTheme();
+    mount.innerHTML =
+      '<div class="theme-toggle">' +
+      '<span class="theme-toggle-label"><span class="label-text">테마 설정</span></span>' +
+      '<span class="theme-toggle-btns">' +
+      '<button type="button" class="theme-btn' + (t === 'light' ? ' active' : '') + '" id="theme-btn-light" aria-label="라이트 테마">' + ICON_SUN + '</button>' +
+      '<button type="button" class="theme-btn' + (t === 'dark' ? ' active' : '') + '" id="theme-btn-dark" aria-label="다크 테마">' + ICON_MOON + '</button>' +
+      '</span></div>';
+    document.getElementById('theme-btn-light').addEventListener('click', function () { setTheme('light'); });
+    document.getElementById('theme-btn-dark').addEventListener('click', function () { setTheme('dark'); });
+  }
+  renderThemeToggle();
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return iso; }
+  }
+  function getStatus(survey) {
+    if (!survey || !survey.questions || survey.questions.length === 0 || !survey.title) return 'draft';
+    if (survey.manual_status === 'forceOpen') return 'open';
+    if (survey.manual_status === 'forceClosed') return 'closed';
+    var now = Date.now();
+    var start = survey.start_at ? new Date(survey.start_at).getTime() : null;
+    var end = survey.end_at ? new Date(survey.end_at).getTime() : null;
+    if (start && now < start) return 'before';
+    if (end && now > end) return 'closed';
+    return 'open';
+  }
+  var STATUS_LABEL = { draft: '준비 중', before: '시작 전', open: '진행 중', closed: '종료됨' };
+
+  var brandHtml = '<div class="brand-row"><img class="brand-logo" src="/assets/logo.webp" alt="VOY Vote page"></div>';
+
+  var siteFooterHtml = '<p class="muted small" style="text-align:center;margin-top:32px;line-height:1.7;">' +
+    '영업현장의 참고서 VOY,<br>여러분의 관심과 참여로 만들어 집니다.<br>설문조사 감사합니다.</p>' +
+    '<p class="muted small" style="text-align:center;margin-top:16px;line-height:1.7;">' +
+    'ⓒ 2026 YUHAN Sales Strategic Planning Team.</p>';
+
+  function shell(inner) {
+    document.getElementById('app').innerHTML = '<div class="survey-shell">' + brandHtml + inner + siteFooterHtml + '</div>';
+  }
+  function centeredCard(inner) {
+    return '<div class="card card-pad" style="text-align:center;">' + inner + '</div>';
+  }
+
+  var UI = { invalidField: '', submitting: false, submitError: '' };
+  var SURVEY = null;
+
+  function renderForm() {
+    var s = SURVEY;
+    var nicknameInvalid = UI.invalidField === 'nickname';
+    var qHtml = s.questions.map(function (q, idx) {
+      var invalid = UI.invalidField === q.id;
+      var body;
+      if (q.type === 'choice') {
+        body = '<div class="choice-list">' + q.choices.map(function (c, ci) {
+          if (!c || !String(c).trim()) return '';
+          return '<label class="choice-option"><input type="radio" name="q_' + q.id + '" value="' + ci + '">' +
+            '<span>' + escapeHtml(c) + '</span></label>';
+        }).join('') + '</div>';
+      } else {
+        body = '<textarea name="t_' + q.id + '" placeholder="자유롭게 의견을 남겨주세요"></textarea>';
+      }
+      return '<div class="question-block' + (invalid ? ' invalid' : '') + '" data-qid="' + q.id + '">' +
+        '<div class="section-title"><span class="question-num">' + String(idx + 1).padStart(2, '0') + '</span>' +
+        escapeHtml(q.text) + (q.type === 'choice' ? '<span class="required-mark">*</span>' : '') + '</div>' +
+        body + (invalid ? '<div class="error-text">이 문항에 응답해주세요.</div>' : '') + '</div>';
+    }).join('');
+
+    shell(
+      '<div class="eyebrow" style="margin-bottom:10px;">SURVEY</div>' +
+      '<h1 class="page-title" style="margin-bottom:6px;">' + escapeHtml(s.title) + '</h1>' +
+      (s.end_at ? '<p class="muted small" style="margin:0 0 20px;">' + fmtDateTime(s.end_at) + '까지 참여 가능합니다.</p>' : '<div style="height:20px;"></div>') +
+      (UI.submitError ? '<div class="flash flash-error">' + escapeHtml(UI.submitError) + '</div>' : '') +
+      '<form id="survey-form" class="card card-pad">' +
+      '<div class="question-block' + (nicknameInvalid ? ' invalid' : '') + '" data-qid="nickname">' +
+      '<label class="field-label" for="nickname-input">당신의 VOY 닉네임은?<span class="required-mark">*</span></label>' +
+      '<input type="text" id="nickname-input" name="nickname" placeholder="ex) 롱다리웰시코기45" maxlength="30" autocomplete="off">' +
+      (nicknameInvalid ? '<div class="error-text">닉네임을 입력해주세요.</div>' : '') +
+      '</div>' +
+      qHtml +
+      '<div style="margin-top:22px;"><button type="submit" class="btn btn-primary btn-block"' + (UI.submitting ? ' disabled' : '') + '>' +
+      (UI.submitting ? '제출 중…' : '제출하기') + '</button></div>' +
+      '</form>'
+    );
+
+    var form = document.getElementById('survey-form');
+    form.querySelectorAll('.choice-option input').forEach(function (input) {
+      input.addEventListener('change', function () {
+        var group = input.closest('.choice-list');
+        group.querySelectorAll('.choice-option').forEach(function (l) { l.classList.remove('checked'); });
+        input.closest('.choice-option').classList.add('checked');
+      });
+    });
+    form.addEventListener('submit', handleSubmit);
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    var s = SURVEY;
+    var form = e.target;
+    var nickname = form.querySelector('#nickname-input').value.trim();
+    if (!nickname) { UI.invalidField = 'nickname'; renderForm(); focusInvalid(); return; }
+
+    var answers = {};
+    var firstInvalid = null;
+    s.questions.forEach(function (q) {
+      if (q.type === 'choice') {
+        var checked = form.querySelector('input[name="q_' + q.id + '"]:checked');
+        if (!checked) { if (!firstInvalid) firstInvalid = q.id; return; }
+        answers[q.id] = Number(checked.value);
+      } else {
+        var ta = form.querySelector('textarea[name="t_' + q.id + '"]');
+        answers[q.id] = ta ? ta.value.trim() : '';
+      }
+    });
+    if (firstInvalid) { UI.invalidField = firstInvalid; renderForm(); focusInvalid(); return; }
+
+    UI.invalidField = '';
+    UI.submitting = true;
+    UI.submitError = '';
+    renderForm();
+
+    sb.from('responses').insert({ survey_id: s.id, nickname: nickname, answers: answers }).then(function (res) {
+      if (res.error) {
+        UI.submitting = false;
+        UI.submitError = '제출 중 문제가 발생했습니다. 잠시 후 다시 시도해주세요.';
+        renderForm();
+        return;
+      }
+      try { sessionStorage.setItem('voy_submitted_' + s.id, '1'); } catch (e) {}
+      renderDone();
+    });
+  }
+
+  function focusInvalid() {
+    var el = document.querySelector('[data-qid="' + UI.invalidField + '"]');
+    if (el) { el.scrollIntoView({ block: 'center' }); var f = el.querySelector('input,textarea'); if (f) f.focus(); }
+  }
+
+  function renderDone() {
+    shell(centeredCard(
+      '<div class="eyebrow" style="margin-bottom:10px;color:var(--accent);">DONE</div>' +
+      '<h1 class="page-title" style="margin-bottom:10px;">제출이 완료되었습니다</h1>' +
+      '<p class="muted">소중한 의견 감사합니다.</p>'
+    ));
+  }
+
+  function renderStatusScreen(status, survey) {
+    if (status === 'draft') {
+      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">설문이 아직 준비 중입니다</h1><p class="muted">잠시 후 다시 확인해주세요.</p>'));
+      return;
+    }
+    if (status === 'before') {
+      shell(centeredCard(
+        '<span class="badge badge-before"><span class="badge-dot"></span>' + STATUS_LABEL.before + '</span>' +
+        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
+        '<p class="muted">' + (survey.start_at ? (fmtDateTime(survey.start_at) + '부터 참여하실 수 있습니다.') : '곧 시작됩니다.') + '</p>'
+      ));
+      return;
+    }
+    if (status === 'closed') {
+      shell(centeredCard(
+        '<span class="badge badge-closed"><span class="badge-dot"></span>' + STATUS_LABEL.closed + '</span>' +
+        '<h1 class="page-title" style="margin:14px 0 10px;">' + escapeHtml(survey.title) + '</h1>' +
+        '<p class="muted">설문이 종료되었습니다. 참여해주셔서 감사합니다.</p>'
+      ));
+      return;
+    }
+  }
+
+  async function boot() {
+    var app = document.getElementById('app');
+    var res = await sb.from('surveys').select('*').eq('is_active', true).maybeSingle();
+    if (res.error) {
+      shell(centeredCard('<h1 class="page-title" style="margin-bottom:10px;">불러오지 못했습니다</h1><p class="muted">잠시 후 새로고침해주세요.</p>'));
+      return;
+    }
+    var survey = res.data;
+    var status = getStatus(survey);
+    if (status !== 'open') { renderStatusScreen(status, survey); return; }
+
+    SURVEY = survey;
+    var already = false;
+    try { already = sessionStorage.getItem('voy_submitted_' + survey.id) === '1'; } catch (e) {}
+    if (already) { renderDone(); return; }
+    renderForm();
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

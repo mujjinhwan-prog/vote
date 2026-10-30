@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VOY 영상 재생</title>
+<link rel="icon" href="data:,">
+<style>
+  html,body{margin:0;padding:0;height:100%;background:#000;overflow:hidden;}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000;}
+  video{width:100%;height:100%;object-fit:contain;background:#000;}
+  #playOverlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;cursor:pointer;background:rgba(0,0,0,.25);}
+  #playOverlay[hidden]{display:none;}
+  #playBtn{width:88px;height:88px;border-radius:999px;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 18px rgba(0,0,0,.4);}
+  #playBtn svg{width:34px;height:34px;margin-left:4px;fill:#111;}
+  #backLink{position:fixed;top:14px;left:14px;z-index:5;color:#fff;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;font-size:13px;background:rgba(0,0,0,.4);padding:8px 14px;border-radius:20px;}
+  #msg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;color:#eee;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Malgun Gothic",sans-serif;font-size:15px;text-align:center;padding:0 24px;line-height:1.7;}
+</style>
+</head>
+<body>
+<a id="backLink" href="/">← VOY로 돌아가기</a>
+<div id="stage">
+  <video id="player" playsinline controls preload="metadata"></video>
+</div>
+<div id="playOverlay">
+  <div id="playBtn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>
+</div>
+<div id="msg"></div>
+
+<script src="/config.js"></script>
+<script>
+(function () {
+  var BUCKET = 'videos';
+
+  function showMessage(text) {
+    var m = document.getElementById('msg');
+    m.textContent = text;
+    m.style.display = 'flex';
+    document.getElementById('stage').style.display = 'none';
+    document.getElementById('playOverlay').setAttribute('hidden', 'hidden');
+  }
+
+  var params = new URLSearchParams(location.search);
+  var file = params.get('f');
+
+  if (!file) {
+    showMessage('재생할 영상이 지정되지 않았어요.\n주소 끝에 ?f=파일이름.mp4 형식으로 붙여주세요.');
+    return;
+  }
+  if (!window.SUPABASE_CONFIG || !window.SUPABASE_CONFIG.url) {
+    showMessage('설정 파일(config.js)을 불러오지 못했어요.');
+    return;
+  }
+
+  var src = window.SUPABASE_CONFIG.url + '/storage/v1/object/public/' + BUCKET + '/' + encodeURIComponent(file);
+  var video = document.getElementById('player');
+  var overlay = document.getElementById('playOverlay');
+  video.src = src;
+
+  video.addEventListener('error', function () {
+    showMessage('영상을 불러올 수 없어요.\nSupabase Storage의 "' + BUCKET + '" 버킷이 공개(Public)로 설정되어 있는지, 파일 이름이 정확한지 확인해주세요.');
+  });
+
+  overlay.addEventListener('click', function () {
+    overlay.setAttribute('hidden', 'hidden');
+    video.play().catch(function () {});
+  });
+  video.addEventListener('play', function () {
+    overlay.setAttribute('hidden', 'hidden');
+  });
+})();
+</script>
+</body>
+</html>
