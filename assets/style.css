@@ -1,4 +1,4 @@
-@font-face{font-family:'Yellowtail';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/yellowtail-latin-400.woff2) format('woff2');}
+@font-face{font-family:'Kaushan Script';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/kaushan-script-latin-400.woff2) format('woff2');}
 @font-face{font-family:'Noto Sans KR';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/noto-sans-kr-400.woff2) format('woff2');unicode-range:U+AC00-D7A3,U+1100-11FF,U+3130-318F,U+A960-A97F,U+D7B0-D7FF;}
 @font-face{font-family:'Noto Sans KR';font-style:normal;font-weight:700;font-display:swap;src:url(./fonts/noto-sans-kr-700.woff2) format('woff2');unicode-range:U+AC00-D7A3,U+1100-11FF,U+3130-318F,U+A960-A97F,U+D7B0-D7FF;}
 @font-face{font-family:'Noto Sans KR';font-style:normal;font-weight:400;font-display:swap;src:url(./fonts/noto-sans-kr-latin-400.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;}
@@ -211,7 +211,7 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .print-page-table>tfoot>tr>td{display:table-cell;padding-top:4mm;}
   .print-footer{position:static;margin:0 !important;font-size:10px;color:#3F4A45;text-align:center;border-top:1px solid #0F5C42;padding-top:6px;}
   .print-title{display:flex !important;align-items:baseline;flex-wrap:wrap;gap:0 12px;margin:0 0 4px;}
-  .print-script{font-family:'Yellowtail','Brush Script MT',cursive;font-weight:400;font-size:36px;line-height:1.15;color:#0F5C42;letter-spacing:.5px;display:inline-block;transform:rotate(-3deg) skewX(-6deg);transform-origin:left bottom;padding:0 8px 4px 2px;background:linear-gradient(90deg,#C2410C 0,rgba(194,65,12,0) 100%) no-repeat 0 100%/100% 2px;}
+  .print-script{font-family:'Kaushan Script','Brush Script MT',cursive;font-weight:400;font-size:30px;line-height:1.2;color:#0F5C42;letter-spacing:1px;word-spacing:3px;display:inline-block;transform:rotate(-2deg);transform-origin:left bottom;padding:0 8px 4px 2px;background:linear-gradient(90deg,#C2410C 0,rgba(194,65,12,0) 100%) no-repeat 0 100%/100% 2px;}
   .print-title-sub{font-size:16px;font-weight:700;color:#3F4A45;}
   .print-top-row{display:flex !important;gap:16px;align-items:stretch;margin-bottom:16px;}
   .print-top-row .card{flex:1;margin-bottom:0 !important;}
