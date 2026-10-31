@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261030a">
+<link rel="stylesheet" href="/assets/style.css?v=20261030b">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -767,7 +767,7 @@
           (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
           (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
       }
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록(주황색이 가장 많음) 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
         '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
           return '<div class="bubble-col">' + col.map(bubbleHtml).join('') + '</div>';
         }).join('') + '</div>' +
