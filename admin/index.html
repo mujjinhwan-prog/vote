@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261030c">
+<link rel="stylesheet" href="/assets/style.css?v=20261030d">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -307,7 +307,7 @@
 
   /* ---------------- shell / nav ---------------- */
   function adminShell(bodyHtml) {
-    var html = '<div class="admin-shell"><table class="print-page-table"><tbody><tr><td>' + brandHtml('left') +
+    var html = '<div class="admin-shell"><table class="print-page-table"><tbody><tr><td>' + '<div class="shell-top">' + brandHtml('left') +
       '<div class="admin-top shell-header"><div class="admin-title-row">' +
       '<div class="eyebrow no-print">ADMIN</div><h1 class="section-title no-print" style="font-size:19px;">VOY Research 관리자</h1>' +
       '<h1 class="section-title print-only print-title"><span class="print-script">Voice Of YUHAN</span><span class="print-title-sub">(VOY) 설문조사</span></h1>' +
@@ -315,7 +315,7 @@
       '<div class="tabs">' +
       '<button class="tab-btn' + (VIEW === 'list' ? ' active' : '') + '" data-nav="list">설문 목록</button>' +
       '<button class="tab-btn' + (VIEW === 'create' ? ' active' : '') + '" data-nav="create">설문 만들기</button>' +
-      '</div></div>';
+      '</div></div></div>';
     if (UI.flash) html += '<div class="flash">' + escapeHtml(UI.flash) + '</div>';
     if (UI.error) html += '<div class="flash flash-error">' + escapeHtml(UI.error) + '</div>';
     html += bodyHtml;
