@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261030f">
+<link rel="preload" href="/assets/fonts/kaushan-script-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/assets/style.css?v=20261030g">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -307,7 +308,8 @@
 
   /* ---------------- shell / nav ---------------- */
   function adminShell(bodyHtml) {
-    var html = '<div class="admin-shell"><table class="print-page-table"><tbody><tr><td>' + '<div class="shell-top">' + brandHtml('left') +
+    var html = '<span aria-hidden="true" style="position:absolute;left:-9999px;top:0;font-family:\'Kaushan Script\';font-size:30px;pointer-events:none;">Voice Of YUHAN</span>' +
+      '<div class="admin-shell"><table class="print-page-table"><tbody><tr><td>' + '<div class="shell-top">' + brandHtml('left') +
       '<div class="admin-top shell-header"><div class="admin-title-row">' +
       '<div class="eyebrow no-print">ADMIN</div><h1 class="section-title no-print" style="font-size:19px;">VOY Research 관리자</h1>' +
       '<h1 class="section-title print-only print-title"><span class="print-script">Voice Of YUHAN</span><span class="print-title-sub">(VOY) 설문조사</span></h1>' +
@@ -735,44 +737,55 @@
       printItems.forEach(function (it) {
         if (it.kind === 'group') { var ratio = it.count / maxGroupCount; it.tier = ratio >= 0.6 ? 1 : (ratio >= 0.3 ? 2 : 3); }
       });
-      var bubbleCols = [[], [], []];
-      var bubbleColHeights = [0, 0, 0];
-      var wideItems = [];
-      var wideHeight = 0;
+      /* order: groups (most people first) -> 기타 의견 -> single answers (short to long). Long ones become full-width rows in place. */
       var groupSeq = 0, singleSeq = 0;
-      printItems.forEach(function (it) {
-        if (it.kind === 'group') { it.hue = groupSeq % 5; groupSeq++; }
-        else if (it.kind === 'single') { it.pal = singleSeq % 6; singleSeq++; }
-      });
-      printItems.forEach(function (it) {
+      printItems.forEach(function (it) { if (it.kind === 'single') { it.pal = singleSeq % 6; singleSeq++; } });
+      var orderedItems = printItems.filter(function (it) { return it.kind === 'group'; })
+        .concat(printItems.filter(function (it) { return it.kind === 'other'; }))
+        .concat(printItems.filter(function (it) { return it.kind === 'single'; }));
+      var bubbleBlocks = [];
+      function lastBlock(type) {
+        var bl = bubbleBlocks[bubbleBlocks.length - 1];
+        if (!bl || bl.type !== type) {
+          bl = type === 'cloud' ? { type: 'cloud', cols: [[], [], []], hs: [0, 0, 0] } : { type: 'wide', items: [], h: 0 };
+          bubbleBlocks.push(bl);
+        }
+        return bl;
+      }
+      orderedItems.forEach(function (it) {
         it.fs = it.kind === 'group' ? Math.round(Math.min(18, 13 + it.count * 0.5) * 10) / 10 : 12;
         var badge = showCount ? it.count + '명' : '';
         var est = measureBubbleHeight(it.text, it.fs, it.kind !== 'single', badge);
-        /* very long answers become full-width (horizontal) bubbles under the columns instead of one tall column */
         if (est >= 125) {
-          wideItems.push(it);
-          wideHeight += measureBubbleHeight(it.text, it.fs, it.kind !== 'single', badge, 650);
+          var wb = lastBlock('wide');
+          wb.items.push(it);
+          wb.h += measureBubbleHeight(it.text, it.fs, it.kind !== 'single', badge, 650);
           return;
         }
+        var cb = lastBlock('cloud');
         var mi = 0;
-        if (bubbleColHeights[1] < bubbleColHeights[mi]) mi = 1;
-        if (bubbleColHeights[2] < bubbleColHeights[mi]) mi = 2;
-        bubbleCols[mi].push(it);
-        bubbleColHeights[mi] += est;
+        if (cb.hs[1] < cb.hs[mi]) mi = 1;
+        if (cb.hs[2] < cb.hs[mi]) mi = 2;
+        cb.cols[mi].push(it);
+        cb.hs[mi] += est;
       });
       function bubbleHtml(it) {
         var cls = it.kind === 'other' ? 'bubble-other'
-          : (it.kind === 'group' ? 'bubble-g' + it.tier + ' bubble-h' + it.hue : 'bubble-s bubble-p' + it.pal);
+          : (it.kind === 'group' ? 'bubble-g' + it.tier : 'bubble-s bubble-p' + it.pal);
         return '<div class="bubble-item ' + cls + (it.kind !== 'single' ? ' is-group' : '') + '"' +
           (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
           (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
       }
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
-        '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
-          return '<div class="bubble-col">' + col.map(bubbleHtml).join('') + '</div>';
-        }).join('') + '</div>' +
-        (wideItems.length ? '<div class="bubble-wide-row">' + wideItems.map(bubbleHtml).join('') + '</div>' : '');
-      var cardEst = 70 + Math.max(bubbleColHeights[0], bubbleColHeights[1], bubbleColHeights[2]) + wideHeight + (showCount ? 24 : 0);
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 같은 의견은 묶음 풍선으로 먼저 보여드리며, 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많습니다. 숫자는 해당 의견을 낸 인원 수이고, 1~2명의 개별 의견은 뒤쪽에 작게 표시했습니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
+        bubbleBlocks.map(function (bl) {
+          if (bl.type === 'wide') return '<div class="bubble-wide-row">' + bl.items.map(bubbleHtml).join('') + '</div>';
+          return '<div class="bubble-cloud">' + bl.cols.map(function (col) {
+            return '<div class="bubble-col">' + col.map(bubbleHtml).join('') + '</div>';
+          }).join('') + '</div>';
+        }).join('');
+      var cardEst = 70 + (showCount ? 34 : 0) + bubbleBlocks.reduce(function (sum, bl) {
+        return sum + (bl.type === 'wide' ? bl.h : Math.max(bl.hs[0], bl.hs[1], bl.hs[2]));
+      }, 0);
       var keepClass = cardEst <= 900 ? ' keep-together' : '';
 
       var list = texts.length
@@ -915,7 +928,18 @@
     adminShell(body + modal + viewModal);
 
     document.getElementById('back-list').addEventListener('click', function () { goto('list'); });
-    document.getElementById('print-results').addEventListener('click', function () { window.print(); });
+    document.getElementById('print-results').addEventListener('click', function () {
+      /* make sure the print-only fonts are fully loaded before the print dialog takes its snapshot */
+      var done = false;
+      function go() { if (done) return; done = true; window.print(); }
+      try {
+        Promise.all([
+          document.fonts.load('30px "Kaushan Script"', 'Voice Of YUHAN'),
+          document.fonts.load('700 16px "Noto Sans KR"', '설문조사')
+        ]).then(go, go);
+        setTimeout(go, 1500);
+      } catch (e) { go(); }
+    });
     document.querySelectorAll('[data-delete-response]').forEach(function (b) {
       b.addEventListener('click', function () {
         UI.busy = true; render();

@@ -211,7 +211,7 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .print-page-table>tfoot>tr>td{display:table-cell;padding-top:4mm;}
   .print-footer{position:static;margin:0 !important;font-size:10px;color:#3F4A45;text-align:center;border-top:1px solid #0F5C42;padding-top:6px;}
   .print-title{display:flex !important;align-items:baseline;flex-wrap:wrap;gap:0 10px;margin:0 0 4px;}
-  .print-script{font-family:'Kaushan Script','Noto Sans KR',cursive;font-weight:400;font-size:30px;line-height:1.25;color:#0F5C42;letter-spacing:1px;word-spacing:3px;display:inline-block;transform:none;padding:0 6px 3px 0;background:linear-gradient(90deg,#C2410C 0,rgba(194,65,12,0) 100%) no-repeat 0 100%/100% 2px;}
+  .print-script{font-family:'Kaushan Script','Noto Sans KR',sans-serif;font-weight:400;font-size:30px;line-height:1.25;color:#0F5C42;letter-spacing:1px;word-spacing:3px;display:inline-block;transform:none;padding:0 6px 3px 0;background:linear-gradient(90deg,#C2410C 0,rgba(194,65,12,0) 100%) no-repeat 0 100%/100% 2px;}
   .print-title-sub{font-size:14px;font-weight:700;color:#3F4A45;}
   .print-top-row{display:flex !important;gap:16px;align-items:stretch;margin-bottom:16px;}
   .print-top-row .card{flex:1;margin-bottom:0 !important;}
@@ -268,6 +268,7 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .daily-side-col-old{width:auto !important;border-left:0 !important;border-top:1px solid #8C9792;padding-left:0 !important;padding-top:8px;margin-top:8px;}
   .daily-period-line{font-size:11px;color:#3F4A45;white-space:nowrap;}
   .bubble-cloud{display:block !important;margin-top:6px;}
+  .bubble-cloud+.bubble-cloud,.bubble-wide-row+.bubble-cloud,.bubble-cloud+.bubble-wide-row{margin-top:2px;}
   .bubble-cloud::after{content:'';display:block;clear:both;}
   .bubble-col{float:left;width:32%;margin-right:2%;}
   .bubble-col:last-child{margin-right:0;}
@@ -277,16 +278,12 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .bubble-count{display:block;margin-top:5px;text-align:right;font-size:10px;font-weight:700;line-height:1.4;}
   .bubble-count b{display:inline-block;padding:0 8px;border-radius:999px;background:#fff;color:#262E2B;font-weight:700;}
   /* palette: admin deep green first, then harmonious teal / indigo / plum / amber; tier = how many people agree (dark = many) */
-  /* palette: original multi-hue bubbles (green / teal / indigo / plum / amber); tier = how many people agree (dark = many) */
+  /* palette: one calm family anchored on the admin deep green; groups = green ladder by headcount, singles = soft low-saturation tints */
   .bubble-g1,.bubble-g2{color:#fff !important;}
-  .bubble-g1.bubble-h0{background:#0F5C42;} .bubble-g2.bubble-h0{background:#2F7D61;} .bubble-g3.bubble-h0{background:#A8CDBB;}
-  .bubble-g1.bubble-h1{background:#1B5E78;} .bubble-g2.bubble-h1{background:#2F7A96;} .bubble-g3.bubble-h1{background:#B5D4E0;}
-  .bubble-g1.bubble-h2{background:#3A4F8C;} .bubble-g2.bubble-h2{background:#5468A3;} .bubble-g3.bubble-h2{background:#C3CCE6;}
-  .bubble-g1.bubble-h3{background:#6A3F7A;} .bubble-g2.bubble-h3{background:#86599A;} .bubble-g3.bubble-h3{background:#D4C2DC;}
-  .bubble-g1.bubble-h4{background:#8A5A12;} .bubble-g2.bubble-h4{background:#9A6A1C;} .bubble-g3.bubble-h4{background:#E9D3A8;}
-  .bubble-s{border:1px solid rgba(0,0,0,.08);}
-  .bubble-p0{background:#E1EFE8;} .bubble-p1{background:#DCEBF1;} .bubble-p2{background:#E3E8F5;}
-  .bubble-p3{background:#EBE3F0;} .bubble-p4{background:#F5EBD3;} .bubble-p5{background:#F3E2DD;}
+  .bubble-g1{background:#0F5C42;} .bubble-g2{background:#2F7D61;} .bubble-g3{background:#C9DFD3;}
+  .bubble-s{border:1px solid rgba(15,92,66,.12);}
+  .bubble-p0{background:#E6F0EA;} .bubble-p1{background:#E4EDF0;} .bubble-p2{background:#EDEFE6;}
+  .bubble-p3{background:#F3EEE0;} .bubble-p4{background:#E9ECEA;} .bubble-p5{background:#EFE8E4;}
   .bubble-other{background:#E4E6E8;border:1px solid #CDD1D4;}
   .bubble-g1 .bubble-count b,.bubble-g2 .bubble-count b{color:#262E2B;}
   .bubble-wide-row{clear:both;padding-top:2px;}
