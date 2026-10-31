@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
-<link rel="stylesheet" href="/assets/style.css?v=20261006g">
+<link rel="stylesheet" href="/assets/style.css?v=20261030a">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -310,7 +310,7 @@
     var html = '<div class="admin-shell"><table class="print-page-table"><tbody><tr><td>' + brandHtml('left') +
       '<div class="admin-top shell-header"><div class="admin-title-row">' +
       '<div class="eyebrow no-print">ADMIN</div><h1 class="section-title no-print" style="font-size:19px;">VOY Research 관리자</h1>' +
-      '<h1 class="section-title print-only" style="font-size:19px;">Voice Of Yuhan(VOY) 설문조사</h1>' +
+      '<h1 class="section-title print-only print-title"><span class="print-script">Voice Of YUHAN</span><span class="print-title-sub">(VOY) 설문조사</span></h1>' +
       '</div>' +
       '<div class="tabs">' +
       '<button class="tab-btn' + (VIEW === 'list' ? ' active' : '') + '" data-nav="list">설문 목록</button>' +
@@ -321,7 +321,7 @@
     html += bodyHtml;
     html += '<div class="foot-link"><a href="/">설문조사 페이지 보기 ↗</a></div>' +
       '</td></tr></tbody><tfoot><tr><td>' +
-      '<p class="muted small print-footer" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Strategic Planning.</p>' +
+      '<p class="muted small print-footer" style="text-align:center;margin-top:16px;">ⓒ 2026 YUHAN Sales Strategic Planning Team.</p>' +
       '</td></tr></tfoot></table></div>';
     document.getElementById('app').innerHTML = html;
     document.querySelectorAll('[data-nav]').forEach(function (b) {
@@ -611,17 +611,19 @@
       guard++;
     }
     var maxDaily = dailyList.reduce(function (m, d) { return Math.max(m, d.count); }, 0) || 1;
+    var peakKey = null;
+    dailyList.forEach(function (d) { if (peakKey === null && d.count > 0 && d.count === maxDaily) peakKey = d.key; });
     var dailyBars = dailyList.map(function (d) {
       var pct = Math.max(Math.round((d.count / maxDaily) * 100), d.count > 0 ? 6 : 2);
-      return '<div class="daily-bar-item">' +
+      return '<div class="daily-bar-item' + (d.key === peakKey ? ' is-peak' : '') + '">' +
         '<span class="daily-bar-count">' + d.count + '</span>' +
         '<div class="daily-bar-track"><div class="daily-bar-fill' + (d.count > 0 ? ' has-value' : '') + '" style="height:' + pct + '%;"></div></div>' +
         '<span class="daily-bar-label">' + escapeHtml(d.label) + '</span>' +
         '</div>';
     }).join('');
     var dailyCard = '<div class="card card-pad" style="margin-bottom:16px;">' +
-      '<div class="section-title" style="margin-bottom:6px;">날짜별 참여 현황</div>' +
-      '<p class="muted small" style="margin:0 0 12px;">설문 시작일부터 하루 단위 응답 수입니다.</p>' +
+      '<div class="daily-head"><div class="section-title">날짜별 참여 현황</div>' +
+      '<span class="daily-hint muted small">설문 시작일부터 하루 단위 응답 수입니다.</span></div>' +
       '<div class="daily-chart-row">' +
       '<div class="daily-chart-col">' +
       (dailyList.length ? '<div class="daily-bars">' + dailyBars + '</div>' : '<p class="empty-note">데이터가 없습니다.</p>') +
@@ -645,10 +647,11 @@
       if (q.type === 'choice') {
         var counts = q.choices.map(function () { return 0; });
         responses.forEach(function (r) { var a = r.answers[q.id]; if (typeof a === 'number' && counts[a] !== undefined) counts[a]++; });
+        var topCount = counts.reduce(function (m, n) { return Math.max(m, n); }, 0);
         var rows = q.choices.map(function (c, ci) {
           if (!c || !String(c).trim()) return '';
           var pct = total ? Math.round((counts[ci] / total) * 100) : 0;
-          return '<div class="bar-row"><span class="bar-label">' + escapeHtml(c) + '</span>' +
+          return '<div class="bar-row' + (topCount > 0 && counts[ci] === topCount ? ' is-top' : '') + '"><span class="bar-label">' + escapeHtml(c) + '</span>' +
             '<span class="bar-count">' + counts[ci] + '건 · ' + pct + '%</span>' +
             '<div class="bar-track"><div class="bar-fill" style="width:' + pct + '%;"></div></div></div>';
         }).join('');
@@ -764,7 +767,7 @@
           (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
           (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
       }
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 풍선이 크고 색이 진할수록(주황색이 가장 많음) 같은 의견을 낸 인원이 많으며, 숫자는 해당 의견을 낸 인원 수입니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
         '<div class="bubble-cloud">' + bubbleCols.map(function (col) {
           return '<div class="bubble-col">' + col.map(bubbleHtml).join('') + '</div>';
         }).join('') + '</div>' +
