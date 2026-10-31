@@ -278,14 +278,20 @@ td.mono{font-family:ui-monospace,"SFMono-Regular",Menlo,Consolas,"Liberation Mon
   .bubble-count{display:block;margin-top:5px;text-align:right;font-size:10px;font-weight:700;line-height:1.4;}
   .bubble-count b{display:inline-block;padding:0 8px;border-radius:999px;background:#fff;color:#262E2B;font-weight:700;}
   /* palette: admin deep green first, then harmonious teal / indigo / plum / amber; tier = how many people agree (dark = many) */
-  /* palette: one calm family anchored on the admin deep green; groups = green ladder by headcount, singles = soft low-saturation tints */
-  .bubble-g1,.bubble-g2{color:#fff !important;}
-  .bubble-g1{background:#0F5C42;} .bubble-g2{background:#2F7D61;} .bubble-g3{background:#C9DFD3;}
+  /* palette: one calm pastel family. groups = slightly deeper tone of each hue (+ border), singles = lighter tone of the same hues */
+  .bubble-g{border:1px solid transparent;}
+  .bubble-g.bubble-h0{background:#D2E7DB;border-color:#8DBBA2;}
+  .bubble-g.bubble-h1{background:#D0E1E8;border-color:#8FB4C4;}
+  .bubble-g.bubble-h2{background:#E0E4D0;border-color:#AAB48A;}
+  .bubble-g.bubble-h3{background:#EFE3C4;border-color:#C9B27A;}
+  .bubble-g.bubble-h4{background:#DADFDC;border-color:#A0AAA5;}
+  .bubble-g.bubble-h5{background:#EBD9D1;border-color:#C49C8B;}
+  .bubble-g1{border-width:2px;} .bubble-g2{border-width:1.5px;} .bubble-g3{border-width:1px;}
+  .bubble-g1 .bubble-count b,.bubble-g2 .bubble-count b,.bubble-g3 .bubble-count b{background:#fff;color:#262E2B;}
   .bubble-s{border:1px solid rgba(15,92,66,.12);}
   .bubble-p0{background:#E6F0EA;} .bubble-p1{background:#E4EDF0;} .bubble-p2{background:#EDEFE6;}
   .bubble-p3{background:#F3EEE0;} .bubble-p4{background:#E9ECEA;} .bubble-p5{background:#EFE8E4;}
   .bubble-other{background:#E4E6E8;border:1px solid #CDD1D4;}
-  .bubble-g1 .bubble-count b,.bubble-g2 .bubble-count b{color:#262E2B;}
   .bubble-wide-row{clear:both;padding-top:2px;}
   .bubble-wide-row .bubble-item{width:100%;}
   .q-result-card.keep-together{break-inside:avoid;}

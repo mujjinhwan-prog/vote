@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VOY Research 관리자</title>
 <link rel="preload" href="/assets/fonts/kaushan-script-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/assets/style.css?v=20261030g">
+<link rel="stylesheet" href="/assets/style.css?v=20261030h">
 <link rel="icon" href="data:,">
 <style>
 .draw-stage{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:14px 0;height:100%;}
@@ -739,10 +739,14 @@
       });
       /* order: groups (most people first) -> 기타 의견 -> single answers (short to long). Long ones become full-width rows in place. */
       var groupSeq = 0, singleSeq = 0;
-      printItems.forEach(function (it) { if (it.kind === 'single') { it.pal = singleSeq % 6; singleSeq++; } });
+      printItems.forEach(function (it) {
+        if (it.kind === 'single') { it.pal = singleSeq % 6; singleSeq++; }
+        else if (it.kind === 'group') { it.hue = groupSeq % 6; groupSeq++; }
+      });
+      /* 기타 의견 is always the very last bubble */
       var orderedItems = printItems.filter(function (it) { return it.kind === 'group'; })
-        .concat(printItems.filter(function (it) { return it.kind === 'other'; }))
-        .concat(printItems.filter(function (it) { return it.kind === 'single'; }));
+        .concat(printItems.filter(function (it) { return it.kind === 'single'; }))
+        .concat(printItems.filter(function (it) { return it.kind === 'other'; }));
       var bubbleBlocks = [];
       function lastBlock(type) {
         var bl = bubbleBlocks[bubbleBlocks.length - 1];
@@ -771,12 +775,12 @@
       });
       function bubbleHtml(it) {
         var cls = it.kind === 'other' ? 'bubble-other'
-          : (it.kind === 'group' ? 'bubble-g' + it.tier : 'bubble-s bubble-p' + it.pal);
+          : (it.kind === 'group' ? 'bubble-g bubble-g' + it.tier + ' bubble-h' + it.hue : 'bubble-s bubble-p' + it.pal);
         return '<div class="bubble-item ' + cls + (it.kind !== 'single' ? ' is-group' : '') + '"' +
           (it.kind === 'group' ? ' style="font-size:' + it.fs + 'px;"' : '') + '>' + escapeHtml(it.text) +
           (showCount ? '<span class="bubble-count"><b>' + it.count + '명</b></span>' : '') + '</div>';
       }
-      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 같은 의견은 묶음 풍선으로 먼저 보여드리며, 풍선이 크고 색이 진할수록 같은 의견을 낸 인원이 많습니다. 숫자는 해당 의견을 낸 인원 수이고, 1~2명의 개별 의견은 뒤쪽에 작게 표시했습니다. 기타 의견은 다른 답변과 묶이지 않는 개별 의견입니다.</p>' : '') +
+      var bubbleCloudHtml = (showCount ? '<p class="print-only bubble-legend">※ 같은 의견은 묶음 풍선으로 먼저 보여드리며, 풍선과 글자가 클수록 같은 의견을 낸 인원이 많습니다. 숫자는 해당 의견을 낸 인원 수이고, 1~2명의 개별 의견은 뒤쪽에 작게 표시했습니다. 기타 의견은 다른 답변과 묶이지 않는 의견으로 맨 마지막에 모았습니다.</p>' : '') +
         bubbleBlocks.map(function (bl) {
           if (bl.type === 'wide') return '<div class="bubble-wide-row">' + bl.items.map(bubbleHtml).join('') + '</div>';
           return '<div class="bubble-cloud">' + bl.cols.map(function (col) {
